@@ -25,6 +25,7 @@ const TRANSLATION_SCHEMA = {
       items: {
         type: "object",
         properties: {
+          i: { type: "integer" },
           sentences: {
             type: "array",
             items: {
@@ -38,7 +39,7 @@ const TRANSLATION_SCHEMA = {
             },
           },
         },
-        required: ["sentences"],
+        required: ["i", "sentences"],
         additionalProperties: false,
       },
     },

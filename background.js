@@ -42,7 +42,7 @@ async function resplitLongUnit(unit, fromName, toName, config) {
       role: "system",
       content: `You receive ONE long HTML unit. Split it into 2 to 6 clause-sized reading units and translate each unit from ${fromName} to ${toName}.
 
-Return JSON with exactly one "blocks" entry containing a "sentences" array of { "source", "translation" } objects.
+Return JSON with exactly one "blocks" entry containing "i": 0 and a "sentences" array of { "source", "translation" } objects.
 
 Rules:
 - Every source must be an exact, complete substring of the input HTML, and concatenating all sources in order must reproduce the input exactly
@@ -134,6 +134,84 @@ async function loadConfig() {
   return mergeConfig(result[STORAGE_KEY]);
 }
 
+function buildTranslationMessages(indexedBlocks, fromName, toName) {
+  return [
+    {
+      role: "system",
+      content: `You are a professional translator. You receive an array of numbered HTML snippet objects. For each snippet, split the source into natural reading units and translate each unit from ${fromName} to ${toName}.
+
+Each input object has an integer "i" and an "html" snippet. Return a JSON "blocks" array with one entry per input object. Every output block must include the same "i" as its input and a "sentences" array. Do not merge multiple inputs into one output block; return every input exactly once in a 1:1 correspondence. Each unit has "source" (original HTML) and "translation" (translated HTML).
+
+Segmentation rules:
+- A newline is normally a boundary. Keep text across a newline in one unit only when the next line is clearly a visual wrap that continues the same sentence; when uncertain, split
+- Sentence-ending punctuation (. 。 ． ! ！ ? ？ …) is a boundary. Japanese often omits the final punctuation, so also split where one sentence ends with forms such as …かな, …だろ, …よね, …です, …ます, …た, or a closing bracket/quote and the next sentence begins
+- If one sentence is long (roughly over 40 Japanese characters or 20 English words), split it into clause-sized units at 、 , ; — or clause connections such as けど, から, し, a Japanese て-form, but, because, or and then
+- Do not split inside a noun phrase, quotation/title, URL, or matched HTML tag pair
+- An HTML tag boundary is not a reading-unit boundary. One unit may span multiple inline elements
+
+Source and translation rules:
+- Every unit source must be an exact and complete substring of the original HTML. Concatenating all unit sources in order must reproduce that input snippet exactly
+- Preserve HTML tags in both source and translation
+- Tokens such as ⟦1⟧ are placeholders for images or icons. Do not translate them; keep each token unchanged at the corresponding position in source and translation
+- Translate each unit in the context of the entire snippet, and make the concatenated unit translations read naturally
+- Do not translate URLs
+- Return the same number of blocks as input
+
+Example (one long sentence split into four clause units):
+Input: [{"i":0,"html":"今日は朝から雨だったけど、傘を忘れたから、駅まで走って、なんとか電車に間に合った。"}]
+Output: {"blocks":[{"i":0,"sentences":[{"source":"今日は朝から雨だったけど、","translation":"It had been raining since this morning, but "},{"source":"傘を忘れたから、","translation":"because I forgot my umbrella, "},{"source":"駅まで走って、","translation":"I ran to the station "},{"source":"なんとか電車に間に合った。","translation":"and somehow caught the train."}]}]}`,
+    },
+    {
+      role: "user",
+      content: JSON.stringify(indexedBlocks),
+    },
+  ];
+}
+
+function reconcileIndexedBlocks(rawBlocks, expectedIndices) {
+  const expectedSet = new Set(expectedIndices);
+  const blocks = Array.isArray(rawBlocks) ? rawBlocks : [];
+  const occurrenceCounts = new Map();
+  const firstBlocks = new Map();
+  const outOfRangeIndices = [];
+
+  for (const block of blocks) {
+    const index = block?.i;
+    if (!Number.isInteger(index) || !expectedSet.has(index)) {
+      outOfRangeIndices.push(index ?? null);
+      continue;
+    }
+    occurrenceCounts.set(index, (occurrenceCounts.get(index) || 0) + 1);
+    if (!firstBlocks.has(index)) firstBlocks.set(index, block);
+  }
+
+  const acceptedBlocks = new Map();
+  const duplicateIndices = [];
+  const invalidIndices = [];
+  for (const index of expectedIndices) {
+    const count = occurrenceCounts.get(index) || 0;
+    const block = firstBlocks.get(index);
+    if (count > 1) {
+      duplicateIndices.push(index);
+    } else if (count === 1 && Array.isArray(block?.sentences) && block.sentences.length > 0) {
+      // Keep the established cache/response block shape; i is only for matching.
+      acceptedBlocks.set(index, { sentences: block.sentences });
+    } else if (count === 1) {
+      invalidIndices.push(index);
+    }
+  }
+
+  const missingIndices = expectedIndices.filter((index) => !acceptedBlocks.has(index));
+  return {
+    acceptedBlocks,
+    duplicateIndices,
+    invalidIndices,
+    outOfRangeIndices,
+    missingIndices,
+    receivedCount: blocks.length,
+  };
+}
+
 async function translateBatch(payload) {
   const config = await loadConfig();
   console.log("[mlg:bg] translateBatch called", { models: config.models, apiKeysPresent: Object.keys(config.apiKeys), from: payload.from, to: payload.to, blockCount: payload.htmlBlocks?.length });
@@ -188,46 +266,77 @@ async function translateBatch(payload) {
   // --- Translate uncached blocks via LLM ---
   const fromName = LANG_NAMES[from] || from;
   const toName = LANG_NAMES[to] || to;
-  const messages = [
-    {
-      role: "system",
-      content: `You are a professional translator. You receive an array of HTML snippets. For each snippet, split the source into natural reading units and translate each unit from ${fromName} to ${toName}.
+  const expectedIndices = uncachedBlocks.map((_, index) => index);
+  const indexedBlocks = uncachedBlocks.map((html, i) => ({ i, html }));
+  const acceptedBlocks = new Map();
+  let missingIndices = expectedIndices;
 
-Return a JSON "blocks" array with one entry per input snippet. Each entry has a "sentences" array. Each unit has "source" (original HTML) and "translation" (translated HTML).
-
-Segmentation rules:
-- A newline is normally a boundary. Keep text across a newline in one unit only when the next line is clearly a visual wrap that continues the same sentence; when uncertain, split
-- Sentence-ending punctuation (. 。 ． ! ！ ? ？ …) is a boundary. Japanese often omits the final punctuation, so also split where one sentence ends with forms such as …かな, …だろ, …よね, …です, …ます, …た, or a closing bracket/quote and the next sentence begins
-- If one sentence is long (roughly over 40 Japanese characters or 20 English words), split it into clause-sized units at 、 , ; — or clause connections such as けど, から, し, a Japanese て-form, but, because, or and then
-- Do not split inside a noun phrase, quotation/title, URL, or matched HTML tag pair
-- An HTML tag boundary is not a reading-unit boundary. One unit may span multiple inline elements
-
-Source and translation rules:
-- Every unit source must be an exact and complete substring of the original HTML. Concatenating all unit sources in order must reproduce that input snippet exactly
-- Preserve HTML tags in both source and translation
-- Tokens such as ⟦1⟧ are placeholders for images or icons. Do not translate them; keep each token unchanged at the corresponding position in source and translation
-- Translate each unit in the context of the entire snippet, and make the concatenated unit translations read naturally
-- Do not translate URLs
-- Return the same number of blocks as input
-
-Example (one long sentence split into four clause units):
-Input: ["今日は朝から雨だったけど、傘を忘れたから、駅まで走って、なんとか電車に間に合った。"]
-Output: {"blocks":[{"sentences":[{"source":"今日は朝から雨だったけど、","translation":"It had been raining since this morning, but "},{"source":"傘を忘れたから、","translation":"because I forgot my umbrella, "},{"source":"駅まで走って、","translation":"I ran to the station "},{"source":"なんとか電車に間に合った。","translation":"and somehow caught the train."}]}]}`,
-    },
-    {
-      role: "user",
-      content: JSON.stringify(uncachedBlocks),
-    },
-  ];
   console.log("[mlg:bg] calling LLM chain with models:", config.models, `(${uncachedBlocks.length} uncached of ${htmlBlocks.length})`);
-  const llmResult = await callLLMChain(config.models, messages, config.apiKeys, TRANSLATION_SCHEMA);
-  console.log("[mlg:bg] LLM result:", llmResult);
-  const freshBlocks = llmResult.blocks || [];
-  if (freshBlocks.length !== uncachedBlocks.length) {
-    console.warn("[mlg:bg] block count mismatch", { expected: uncachedBlocks.length, got: freshBlocks.length });
-    throw new Error(`Block count mismatch: expected ${uncachedBlocks.length}, got ${freshBlocks.length}`);
+  try {
+    const messages = buildTranslationMessages(indexedBlocks, fromName, toName);
+    const llmResult = await callLLMChain(config.models, messages, config.apiKeys, TRANSLATION_SCHEMA);
+    console.log("[mlg:bg] LLM result:", llmResult);
+    const reconciliation = reconcileIndexedBlocks(llmResult?.blocks, expectedIndices);
+    for (const [index, block] of reconciliation.acceptedBlocks) {
+      acceptedBlocks.set(index, block);
+    }
+    missingIndices = reconciliation.missingIndices;
+    if (missingIndices.length > 0 || reconciliation.outOfRangeIndices.length > 0) {
+      console.warn("[mlg:bg] translate error: incomplete indexed response", {
+        expectedCount: expectedIndices.length,
+        receivedCount: reconciliation.receivedCount,
+        acceptedCount: reconciliation.acceptedBlocks.size,
+        failedCount: missingIndices.length,
+        missingIndices,
+        duplicateIndices: reconciliation.duplicateIndices,
+        invalidIndices: reconciliation.invalidIndices,
+        outOfRangeIndices: reconciliation.outOfRangeIndices,
+      });
+    }
+  } catch (error) {
+    console.warn("[mlg:bg] translate error: batch call failed; retrying individually", {
+      failedCount: missingIndices.length,
+      missingIndices,
+      error: error.message || String(error),
+    });
   }
 
+  for (const index of missingIndices) {
+    try {
+      const retryMessages = buildTranslationMessages([indexedBlocks[index]], fromName, toName);
+      const retryResult = await callLLMChain(config.models, retryMessages, config.apiKeys, TRANSLATION_SCHEMA);
+      const reconciliation = reconcileIndexedBlocks(retryResult?.blocks, [index]);
+      const block = reconciliation.acceptedBlocks.get(index);
+      if (block) {
+        acceptedBlocks.set(index, block);
+      } else {
+        console.warn("[mlg:bg] translate fragment failed after individual retry", {
+          failedCount: 1,
+          missingIndices: [index],
+          receivedCount: reconciliation.receivedCount,
+          duplicateIndices: reconciliation.duplicateIndices,
+          invalidIndices: reconciliation.invalidIndices,
+          outOfRangeIndices: reconciliation.outOfRangeIndices,
+        });
+      }
+    } catch (error) {
+      console.warn("[mlg:bg] translate fragment failed after individual retry", {
+        failedCount: 1,
+        missingIndices: [index],
+        error: error.message || String(error),
+      });
+    }
+  }
+
+  const unresolvedIndices = expectedIndices.filter((index) => !acceptedBlocks.has(index));
+  if (unresolvedIndices.length > 0) {
+    console.warn("[mlg:bg] translate completed with failed fragments", {
+      failedCount: unresolvedIndices.length,
+      missingIndices: unresolvedIndices,
+    });
+  }
+
+  const freshBlocks = expectedIndices.map((index) => acceptedBlocks.get(index) || null);
   await resplitLongUnits(freshBlocks, fromName, toName, config);
 
   // --- Store fresh results in caches and merge into results ---
@@ -237,7 +346,7 @@ Output: {"blocks":[{"sentences":[{"source":"今日は朝から雨だったけど
     const block = freshBlocks[i];
     results[idx] = block;
 
-    if (block.sentences && block.sentences.length > 0) {
+    if (block?.sentences && block.sentences.length > 0) {
       const cacheKey = buildCacheKey(htmlBlocks[idx], from, to);
       const entry = { block, timestamp: Date.now() };
       memoryCache.set(cacheKey, entry);
@@ -887,7 +996,12 @@ Return JSON: { "prompt": "your prompt text here" }`,
         sendResponse(res);
       })
       .catch((error) => {
-        console.error("[mlg:bg] translate error:", error.message);
+        const blockCount = Array.isArray(payload?.htmlBlocks) ? payload.htmlBlocks.length : 0;
+        console.error("[mlg:bg] translate error:", {
+          blockCount,
+          missingIndices: Array.from({ length: blockCount }, (_, index) => index),
+          error: error.message || String(error),
+        });
         sendResponse({ error: error.message || String(error) });
       });
     return true;

@@ -1269,15 +1269,36 @@ async function translateBlockBatch(blocks, from, to) {
   let offset = 0;
   blockMapping.forEach(({ blockIndex, partCount }) => {
     const block = blocks[blockIndex];
+    const partOffset = offset;
+    offset += partCount;
     if (!block || !block.element.isConnected) {
-      console.warn("[mlg:cs] block disconnected, skipping", { blockIndex, isConnected: block?.element?.isConnected });
-      offset += partCount;
+      console.warn("[mlg:cs] block disconnected, skipping", {
+        blockIndex,
+        text: block?.element?.textContent?.trim().slice(0, 40) || "",
+      });
+      return;
+    }
+    const failedPartIndices = [];
+    for (let p = 0; p < partCount; p++) {
+      const resultIndex = partOffset + p;
+      const resultBlock = resultBlocks[resultIndex];
+      if (!resultBlock || !Array.isArray(resultBlock.sentences) || resultBlock.sentences.length === 0) {
+        failedPartIndices.push(resultIndex);
+      }
+    }
+    if (failedPartIndices.length > 0) {
+      console.warn("[mlg:cs] block translation incomplete; marking failed", {
+        blockIndex,
+        failedPartIndices,
+      });
+      delete block.element.dataset.mlgTranslating;
+      block.element.dataset.mlgFailed = "1";
       return;
     }
     // Collect sentences for each paragraph, interleaved with original separators
     const sentences = [];
     for (let p = 0; p < partCount; p++) {
-      const rb = resultBlocks[offset + p];
+      const rb = resultBlocks[partOffset + p];
       if (rb && rb.sentences) {
         sentences.push(...rb.sentences);
       }
@@ -1288,7 +1309,6 @@ async function translateBlockBatch(blocks, from, to) {
     }
     console.log("[mlg:cs] applying block", { blockIndex, partCount, sentenceCount: sentences.length, realSentences: sentences.filter(s => !s.isSeparator).length });
     applyBlockTranslation(block.element, sentences, from, block.atoms);
-    offset += partCount;
   });
 }
 
