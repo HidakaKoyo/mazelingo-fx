@@ -1,4 +1,7 @@
 // synced from mazelingo-ios/core/src/overlay.js @30f96cc
+// Wrapped in an IIFE: Chrome content scripts of one extension share a global scope,
+// so top-level declarations here must not leak (they collided with content_script.js).
+(() => {
 const MLG_ATOM_TAGS = new Set([
   "svg", "img", "video", "canvas", "input", "select", "textarea", "iframe",
 ]);
@@ -536,3 +539,4 @@ globalThis.MazelingoDomOverlay = Object.freeze({
   renderOriginal,
   structureSignature,
 });
+})();
