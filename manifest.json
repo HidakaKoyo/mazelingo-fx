@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Mazelingo",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Sentence-level bilingual mix translator.",
   "permissions": ["storage", "sidePanel", "activeTab", "tabs"],
   "host_permissions": ["<all_urls>"],
@@ -12,7 +12,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content_script.js"],
+      "js": ["dom-overlay.js", "content_script.js"],
       "css": ["content_style.css"],
       "run_at": "document_idle"
     }

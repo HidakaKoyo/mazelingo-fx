@@ -1,6 +1,21 @@
 const STORAGE_KEY = "mlg_config";
 const HOVER_ACTIVATION_MS = 300;
 const TOGGLE_ANIMATION_MS = 1400;
+const {
+  isMlgIgnoredElement,
+  isMlgAtom,
+  buildTokenStream,
+  locateUnitRange,
+  wrapRange,
+  renderVariant,
+  renderOriginal,
+} = globalThis.MazelingoDomOverlay || {};
+if (
+  !isMlgIgnoredElement || !isMlgAtom || !buildTokenStream ||
+  !locateUnitRange || !wrapRange || !renderVariant || !renderOriginal
+) {
+  throw new Error("[mlg:cs] dom-overlay.js must load before content_script.js");
+}
 const DEFAULT_CONFIG = {
   enabled: true,
   models: ["glm-4.7-flash"],
@@ -243,25 +258,26 @@ function getDisplayLang(span) {
   return getShownLang(span);
 }
 
-function setSpanText(span, lang) {
+function getVariantPlainText(span, lang) {
+  const html = lang === "en" ? getEnglishText(span) : getJapaneseText(span);
+  return stripHtmlTags(html);
+}
+
+function renderSpanDisplay(span, lang) {
   const sourceLang = getSourceLang(span);
-  let shownLang = sourceLang;
-  if (lang === "en") {
-    const text = getEnglishText(span);
-    span.innerHTML = text;
-    if (sourceLang === "en" || span.dataset.mlgTranslation) {
-      shownLang = "en";
-    }
-  } else if (lang === "ja") {
-    const text = getJapaneseText(span);
-    span.innerHTML = text;
-    if (sourceLang === "ja" || span.dataset.mlgTranslation) {
-      shownLang = "ja";
-    }
+  const hasTranslation = typeof span.dataset.mlgTranslation === "string" &&
+    span.dataset.mlgTranslation.length > 0;
+  if (lang === sourceLang || !hasTranslation) {
+    renderOriginal(span);
+    span.dataset.mlgShown = sourceLang;
   } else {
-    span.innerHTML = span.dataset.mlgSource || "";
+    renderVariant(
+      span,
+      sanitizeHtmlFragment(span.dataset.mlgTranslation),
+      span.__mlgBlockAtoms
+    );
+    span.dataset.mlgShown = lang;
   }
-  span.dataset.mlgShown = shownLang;
 }
 
 function applyDefaultDisplay(span) {
@@ -270,11 +286,11 @@ function applyDefaultDisplay(span) {
   }
   const config = STATE.config;
   if (!config.enabled) {
-    setSpanText(span, getSourceLang(span));
+    renderSpanDisplay(span, getSourceLang(span));
     return;
   }
   const display = getDesiredDisplay(span);
-  setSpanText(span, display);
+  renderSpanDisplay(span, display);
 }
 
 function isInteractiveEnabled() {
@@ -286,7 +302,7 @@ function isInteractiveEnabled() {
 function stripHtmlTags(html) {
   const div = document.createElement("div");
   div.innerHTML = html;
-  return div.textContent || "";
+  return (div.textContent || "").replace(/⟦\d+⟧/g, "");
 }
 
 function getTooltipText(span) {
@@ -453,15 +469,45 @@ function cancelSpanAnimation(span) {
   }
 }
 
+function getAnimatedTextNodes(span) {
+  const textNodes = [];
+  function visit(node) {
+    Array.from(node.childNodes || []).forEach((child) => {
+      if (child.nodeType === Node.TEXT_NODE) {
+        textNodes.push(child);
+      } else if (child.nodeType === Node.ELEMENT_NODE && !isMlgAtom(child)) {
+        visit(child);
+      }
+    });
+  }
+  visit(span);
+  return textNodes;
+}
+
+function distributeAnimatedText(textNodes, text, originalLengths) {
+  let cursor = 0;
+  textNodes.forEach((node, index) => {
+    const remaining = text.length - cursor;
+    const take = index === textNodes.length - 1
+      ? Math.max(0, remaining)
+      : Math.min(Math.max(0, remaining), originalLengths[index]);
+    node.data = text.slice(cursor, cursor + take);
+    cursor += take;
+  });
+}
+
 function runToggleAnimation(span, fromLang, toLang) {
   cancelSpanAnimation(span);
-  const fromHtml = fromLang === "en" ? getEnglishText(span) : getJapaneseText(span);
-  const toHtml = toLang === "en" ? getEnglishText(span) : getJapaneseText(span);
-  if (!fromHtml && !toHtml) return;
+  const fromText = getVariantPlainText(span, fromLang);
+  const toText = getVariantPlainText(span, toLang);
+  const textNodes = getAnimatedTextNodes(span);
+  if ((!fromText && !toText) || textNodes.length === 0) {
+    span.dataset.mlgDisplay = toLang;
+    renderSpanDisplay(span, toLang);
+    return;
+  }
 
-  const fromText = stripHtmlTags(fromHtml);
-  const toText = stripHtmlTags(toHtml);
-
+  const originalLengths = textNodes.map((node) => node.data.length);
   span.dataset.mlgAnimating = "1";
   const start = performance.now();
   const duration = TOGGLE_ANIMATION_MS;
@@ -472,7 +518,11 @@ function runToggleAnimation(span, fromLang, toLang) {
     const toVisible = Math.floor(toText.length * progress);
     const fromVisible = Math.ceil(fromText.length * (1 - progress));
     const fromStart = Math.max(0, fromText.length - fromVisible);
-    span.textContent = toText.slice(0, toVisible) + fromText.slice(fromStart);
+    distributeAnimatedText(
+      textNodes,
+      toText.slice(0, toVisible) + fromText.slice(fromStart),
+      originalLengths
+    );
 
     if (progress < 1) {
       const rafId = requestAnimationFrame(step);
@@ -480,7 +530,7 @@ function runToggleAnimation(span, fromLang, toLang) {
     } else {
       delete span.dataset.mlgAnimating;
       span.dataset.mlgDisplay = toLang;
-      setSpanText(span, toLang);
+      renderSpanDisplay(span, toLang);
       STATE.animations.delete(span);
       if (STATE.tooltip?.currentSpan === span) {
         updateTooltip(span);
@@ -836,30 +886,146 @@ function retryBlock(block) {
   enqueueBlock(block);
 }
 
-function cleanHtmlForTranslation(html) {
-  const div = document.createElement("div");
-  div.innerHTML = html;
-  const all = div.querySelectorAll("*");
-  all.forEach((el) => {
-    // Keep only href on <a> tags, remove all other attributes
-    const attrs = Array.from(el.attributes);
-    attrs.forEach((attr) => {
-      if (el.tagName === "A" && attr.name === "href") return;
-      el.removeAttribute(attr.name);
+const MLG_CLEAN_ATOM_ATTRIBUTE = "data-mlg-clean-atom";
+const MLG_ALLOWED_HTML_TAGS = new Set([
+  "a", "b", "i", "em", "strong", "span", "img", "br", "code", "s", "u", "mark",
+]);
+
+function cloneBlockForTranslation(block) {
+  const documentRef = block.ownerDocument;
+  const clone = block.cloneNode(false);
+  const atoms = new Map();
+  let nextAtomNumber = 1;
+
+  function cloneNodeForTranslation(node) {
+    if (node.nodeType === Node.TEXT_NODE) return documentRef.createTextNode(node.data);
+    if (node.nodeType !== Node.ELEMENT_NODE || isMlgIgnoredElement(node)) return null;
+
+    const elementClone = node.cloneNode(false);
+    if (isMlgAtom(node)) {
+      const atomNumber = nextAtomNumber++;
+      atoms.set(atomNumber, node);
+      elementClone.setAttribute(MLG_CLEAN_ATOM_ATTRIBUTE, String(atomNumber));
+      return elementClone;
+    }
+
+    Array.from(elementClone.attributes).forEach((attribute) => {
+      const tagName = elementClone.tagName.toLowerCase();
+      const attributeName = attribute.name.toLowerCase();
+      const keepHref = tagName === "a" && attributeName === "href";
+      if (!keepHref) elementClone.removeAttribute(attribute.name);
     });
+    Array.from(node.childNodes).forEach((child) => {
+      const childClone = cloneNodeForTranslation(child);
+      if (childClone) elementClone.appendChild(childClone);
+    });
+    return elementClone;
+  }
+
+  Array.from(block.childNodes).forEach((child) => {
+    const childClone = cloneNodeForTranslation(child);
+    if (childClone) clone.appendChild(childClone);
   });
-  return div.innerHTML;
+  return { clone, atoms };
+}
+
+function replaceCloneAtomsWithPlaceholders(clone) {
+  clone.querySelectorAll(`[${MLG_CLEAN_ATOM_ATTRIBUTE}]`).forEach((element) => {
+    const atomNumber = element.getAttribute(MLG_CLEAN_ATOM_ATTRIBUTE);
+    element.replaceWith(clone.ownerDocument.createTextNode(`⟦${atomNumber}⟧`));
+  });
+  return clone;
+}
+
+function cleanHtmlForTranslation(block) {
+  const prepared = cloneBlockForTranslation(block);
+  const serializedClone = replaceCloneAtomsWithPlaceholders(prepared.clone.cloneNode(true));
+  return {
+    html: serializedClone.innerHTML,
+    atoms: prepared.atoms,
+    clone: prepared.clone,
+  };
+}
+
+function serializeCleanPart(html) {
+  const container = document.createElement("div");
+  container.innerHTML = html;
+  replaceCloneAtomsWithPlaceholders(container);
+  return container.innerHTML;
+}
+
+function hasTranslatableText(cleanedHtml) {
+  const container = document.createElement("div");
+  container.innerHTML = cleanedHtml;
+  return (container.textContent || "").replace(/⟦\d+⟧/g, "").trim().length > 0;
+}
+
+function compactUrlForSchemeCheck(value) {
+  return typeof value === "string"
+    ? value.trim().replace(/[\u0000-\u0020\u007f]+/g, "")
+    : "";
+}
+
+function isAllowedHref(value) {
+  if (typeof value !== "string") return false;
+  const compact = compactUrlForSchemeCheck(value);
+  const scheme = compact.match(/^([a-z][a-z0-9+.-]*):/i)?.[1]?.toLowerCase();
+  return !scheme || scheme === "http" || scheme === "https";
+}
+
+function isAllowedImageSrc(value) {
+  if (typeof value !== "string") return false;
+  const compact = compactUrlForSchemeCheck(value);
+  if (/^data:image\//i.test(compact)) return true;
+  const scheme = compact.match(/^([a-z][a-z0-9+.-]*):/i)?.[1]?.toLowerCase();
+  return scheme === "http" || scheme === "https";
+}
+
+function sanitizeHtmlFragment(html) {
+  const parsed = new DOMParser().parseFromString(typeof html === "string" ? html : "", "text/html");
+
+  function sanitizeChildren(parent) {
+    Array.from(parent.children).forEach((element) => {
+      sanitizeChildren(element);
+      const tagName = element.tagName.toLowerCase();
+      if (!MLG_ALLOWED_HTML_TAGS.has(tagName)) {
+        element.replaceWith(...element.childNodes);
+        return;
+      }
+
+      Array.from(element.attributes).forEach((attribute) => {
+        const attributeName = attribute.name.toLowerCase();
+        if (attributeName.startsWith("on")) {
+          element.removeAttribute(attribute.name);
+          return;
+        }
+        if (tagName === "a" && attributeName === "href" && isAllowedHref(attribute.value)) return;
+        if (tagName === "img" && attributeName === "src" && isAllowedImageSrc(attribute.value)) return;
+        if (tagName === "img" && attributeName === "alt") return;
+        element.removeAttribute(attribute.name);
+      });
+    });
+  }
+
+  sanitizeChildren(parsed.body);
+  return parsed.body.innerHTML;
 }
 
 function enqueueBlock(block) {
   if (!block.isConnected || block.dataset.mlgTranslating !== "1") return;
   const lang = detectLang(block.textContent);
-  const { parts, separators } = splitHtmlByLineBreaks(block.innerHTML);
-  const cleanParts = parts.map(cleanHtmlForTranslation);
+  const cleaned = cleanHtmlForTranslation(block);
+  if (!hasTranslatableText(cleaned.html)) {
+    delete block.dataset.mlgTranslating;
+    return;
+  }
+  const { parts, separators } = splitHtmlByLineBreaks(cleaned.clone.innerHTML);
+  const cleanParts = parts.map(serializeCleanPart);
   STATE.pendingBlocks.push({
     element: block,
     htmlParts: cleanParts,
     separators,
+    atoms: cleaned.atoms,
     lang,
   });
   queueBlockTranslate();
@@ -1121,12 +1287,25 @@ async function translateBlockBatch(blocks, from, to) {
       }
     }
     console.log("[mlg:cs] applying block", { blockIndex, partCount, sentenceCount: sentences.length, realSentences: sentences.filter(s => !s.isSeparator).length });
-    applyBlockTranslation(block.element, sentences, from);
+    applyBlockTranslation(block.element, sentences, from, block.atoms);
     offset += partCount;
   });
 }
 
-function applyBlockTranslation(block, sentences, sourceLang) {
+function isMlgSentenceNode(node) {
+  return node?.nodeType === Node.ELEMENT_NODE && node.dataset?.mlgSentence === "1";
+}
+
+function sentencePlainSource(sentence) {
+  if (!sentence || typeof sentence.source !== "string") return "";
+  const parsed = new DOMParser().parseFromString(
+    sanitizeHtmlFragment(sentence.source),
+    "text/html"
+  );
+  return parsed.body.textContent || "";
+}
+
+function applyBlockTranslation(block, sentences, sourceLang, retainedAtoms) {
   if (STATE.tooltip?.currentSpan === block) {
     hideTooltip();
   }
@@ -1137,44 +1316,56 @@ function applyBlockTranslation(block, sentences, sourceLang) {
     block.dataset.mlgFailed = "1";
     return;
   }
-  delete block.dataset.mlgTranslating;
   console.log("[mlg:cs] applyBlockTranslation", { sourceLang, sentenceCount: sentences.length });
 
-  // Build sentence spans
-  const fragment = document.createDocumentFragment();
+  const stream = buildTokenStream(block, isMlgSentenceNode);
+  const streamAtoms = new Map(
+    stream.filter((token) => token.type === "atom").map((token) => [token.atomNumber, token.node])
+  );
+  const atoms = retainedAtoms instanceof Map ? retainedAtoms : streamAtoms;
   const sentenceSpans = [];
-  sentences.forEach((sentence) => {
-    if (sentence.isSeparator) {
-      fragment.appendChild(document.createTextNode(sentence.source));
-      return;
-    }
+  let fromIndex = 0;
 
-    const span = document.createElement("span");
-    span.className = "mlg-sentence";
+  for (let sentenceIndex = 0; sentenceIndex < realSentences.length; sentenceIndex += 1) {
+    const sentence = realSentences[sentenceIndex];
+    const plainSource = sentencePlainSource(sentence);
+    const currentStream = sentenceIndex === 0
+      ? stream
+      : buildTokenStream(block, isMlgSentenceNode);
+    const located = locateUnitRange(currentStream, plainSource, fromIndex);
+    if (!located) {
+      console.warn("[mlg:cs] unit range was not found; remaining block units were skipped", {
+        sentenceIndex,
+        source: plainSource,
+      });
+      break;
+    }
+    const range = document.createRange();
+    range.setStart(located.startContainer, located.startOffset);
+    range.setEnd(located.endContainer, located.endOffset);
+    const span = wrapRange(range);
     span.dataset.mlgSentence = "1";
-    span.dataset.mlgSource = sentence.source;
-    span.dataset.mlgTranslation = sentence.translation;
+    span.dataset.mlgSource = plainSource;
+    span.dataset.mlgTranslation = typeof sentence.translation === "string"
+      ? sentence.translation
+      : plainSource;
     span.dataset.mlgLang = sourceLang;
+    span.__mlgBlockAtoms = atoms;
     bindInteractions(span);
-    fragment.appendChild(span);
     sentenceSpans.push(span);
-  });
+    fromIndex = located.nextIndex;
+  }
+
+  if (sentenceSpans.length === 0) {
+    delete block.dataset.mlgTranslating;
+    block.dataset.mlgFailed = "1";
+    return;
+  }
 
   // Assign display languages across all sentences in this block
   assignBlockDisplayLanguages(sentenceSpans);
-  sentenceSpans.forEach((span) => {
-    const display = span.dataset.mlgDefaultDisplay;
-    if (display === sourceLang) {
-      span.innerHTML = span.dataset.mlgSource;
-    } else {
-      span.innerHTML = span.dataset.mlgTranslation;
-    }
-    span.dataset.mlgShown = display;
-  });
-
-  // Replace block content
-  block.innerHTML = "";
-  block.appendChild(fragment);
+  sentenceSpans.forEach(applyDefaultDisplay);
+  delete block.dataset.mlgTranslating;
 }
 
 // --- Root processing ---
@@ -1274,7 +1465,7 @@ function stop() {
   STATE.pendingBlocks = [];
   const spans = document.querySelectorAll("span[data-mlg-sentence]");
   spans.forEach((span) => {
-    setSpanText(span, span.dataset.mlgLang);
+    renderSpanDisplay(span, span.dataset.mlgLang);
   });
   hideTooltip();
 }

@@ -15,6 +15,7 @@ const ZIP_NAME = "mazelingo.zip";
 
 const JS_FILES = [
   "background.js",
+  "dom-overlay.js",
   "content_script.js",
   "config.js",
   "llm.js",

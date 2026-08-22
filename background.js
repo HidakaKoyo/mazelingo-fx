@@ -47,6 +47,7 @@ Return JSON with exactly one "blocks" entry containing a "sentences" array of { 
 Rules:
 - Every source must be an exact, complete substring of the input HTML, and concatenating all sources in order must reproduce the input exactly
 - Preserve HTML tags in source and translation; do not split inside a noun phrase, quotation/title, URL, or matched HTML tag pair
+- Tokens such as ⟦1⟧ are placeholders for images or icons. Do not translate them; keep each token unchanged at the corresponding position in source and translation
 - Translate using the context of the whole unit so the concatenated unit translations read naturally`,
     },
     { role: "user", content: unit.source },
@@ -204,6 +205,7 @@ Segmentation rules:
 Source and translation rules:
 - Every unit source must be an exact and complete substring of the original HTML. Concatenating all unit sources in order must reproduce that input snippet exactly
 - Preserve HTML tags in both source and translation
+- Tokens such as ⟦1⟧ are placeholders for images or icons. Do not translate them; keep each token unchanged at the corresponding position in source and translation
 - Translate each unit in the context of the entire snippet, and make the concatenated unit translations read naturally
 - Do not translate URLs
 - Return the same number of blocks as input
