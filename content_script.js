@@ -1438,6 +1438,7 @@ function refreshDisplay() {
 function startObserver() {
   if (STATE.observer) return;
   STATE.observer = new MutationObserver((mutations) => {
+    evaluatePageForCurrentUrl();
     const nodes = new Set();
     mutations.forEach((mutation) => {
       mutation.addedNodes.forEach((node) => {
@@ -1488,6 +1489,8 @@ function stop() {
     renderSpanDisplay(span, span.dataset.mlgLang);
   });
   hideTooltip();
+  // これが無いと stop 後の start() が永久に空振りする(設定 OFF→ON、除外ページ→対象ページで再開できない)
+  STATE.started = false;
 }
 
 async function init() {
@@ -1521,6 +1524,31 @@ async function init() {
   });
 }
 
-init().catch((e) => {
+// SPA(X など)はページ再読み込みなしで URL が変わるため、読み込み時の対象判定が古くなる。
+// content script は隔離ワールドなのでページ側の history.pushState はフックできない → URL 文字列を監視する
+// (DOM 変化のたびに安価な比較+1秒ごとのフォールバック)。変化時は設定変更時と同じ start/stop 判定を通す。
+let lastSeenUrl = location.href;
+function evaluatePageForCurrentUrl() {
+  if (location.href === lastSeenUrl) return;
+  lastSeenUrl = location.href;
+  if (!STATE.config) return;
+  const shouldTranslate = STATE.config.enabled && isPageAllowed();
+  if (shouldTranslate && !STATE.started) {
+    start();
+    // 以前に翻訳済み→原文表示に戻したブロックを、現在の割合設定でミックス表示に戻す
+    if (typeof refreshDisplay === "function") refreshDisplay();
+  } else if (!shouldTranslate && STATE.started) {
+    stop();
+  }
+}
+function watchUrlChanges() {
+  window.addEventListener("popstate", evaluatePageForCurrentUrl);
+  window.addEventListener("hashchange", evaluatePageForCurrentUrl);
+  setInterval(evaluatePageForCurrentUrl, 1000);
+}
+
+init().then(() => {
+  watchUrlChanges();
+}).catch((e) => {
   console.error("[mlg:cs] init failed:", e);
 });
