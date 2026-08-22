@@ -102,6 +102,34 @@ async function loadPersistentCache() {
   return result[CACHE_STORAGE_KEY] || {};
 }
 
+// 永続キャッシュは service worker の寿命中は1つの共有オブジェクトとして保持する。
+// 以前は translateBatch ごとに「全体を読む→足す→全体を書き戻す」だったため、並行バッチが
+// 互いの結果を上書きして消していた(last-writer-wins)。SW が停止してメモリ層が消えると
+// 永続層にほとんど残っておらず「キャッシュが効かない」状態になっていた。
+let sharedPersistentCachePromise = null;
+function getSharedPersistentCache() {
+  if (!sharedPersistentCachePromise) {
+    sharedPersistentCachePromise = loadPersistentCache().catch((err) => {
+      console.warn("[mlg:bg] persistent cache read failed; starting empty:", err.message);
+      return {};
+    });
+  }
+  return sharedPersistentCachePromise;
+}
+
+let persistentSaveTimer = null;
+let persistentSaveChain = Promise.resolve();
+function schedulePersistentSave(cache) {
+  // 500ms デバウンスし、保存自体は直列化する(同時 set による取りこぼし防止)
+  if (persistentSaveTimer) clearTimeout(persistentSaveTimer);
+  persistentSaveTimer = setTimeout(() => {
+    persistentSaveTimer = null;
+    persistentSaveChain = persistentSaveChain
+      .then(() => savePersistentCache(cache))
+      .catch((err) => console.warn("[mlg:bg] persistent cache write failed:", err.message));
+  }, 500);
+}
+
 async function savePersistentCache(cache) {
   // Evict expired entries
   const now = Date.now();
@@ -118,7 +146,7 @@ async function savePersistentCache(cache) {
 
 async function getCacheStats() {
   const [cache, bytes] = await Promise.all([
-    loadPersistentCache(),
+    getSharedPersistentCache(),
     chrome.storage.local.getBytesInUse(CACHE_STORAGE_KEY),
   ]);
   return { entries: Object.keys(cache).length, bytes };
@@ -126,6 +154,10 @@ async function getCacheStats() {
 
 async function clearTranslationCache() {
   memoryCache.clear();
+  // 共有オブジェクトも空にする(保持したままだと次の保存で消した分が復活する)
+  if (persistentSaveTimer) { clearTimeout(persistentSaveTimer); persistentSaveTimer = null; }
+  const shared = await getSharedPersistentCache();
+  for (const key of Object.keys(shared)) delete shared[key];
   await chrome.storage.local.remove(CACHE_STORAGE_KEY);
 }
 
@@ -226,10 +258,7 @@ async function translateBatch(payload) {
   const uncachedBlocks = [];
 
   // Layer 2 (persistent) は1回だけ読み込む。読めなければ全件ミス扱い
-  let persistentCache = {};
-  try { persistentCache = await loadPersistentCache(); } catch (err) {
-    console.warn("[mlg:bg] persistent cache read failed:", err.message);
-  }
+  const persistentCache = await getSharedPersistentCache();
 
   for (let i = 0; i < htmlBlocks.length; i++) {
     const cacheKey = buildCacheKey(htmlBlocks[i], from, to);
@@ -356,9 +385,7 @@ async function translateBatch(payload) {
   }
   if (dirty) {
     // Fire-and-forget persistent write, once per batch (don't block response)
-    savePersistentCache(persistentCache).catch((err) =>
-      console.warn("[mlg:bg] persistent cache write failed:", err.message)
-    );
+    schedulePersistentSave(persistentCache);
   }
 
   return { blocks: results };
