@@ -1,63 +1,12 @@
 /**
  * Model verification script
- * Sends a minimal request to each model to verify the model ID is valid.
- * Model list sourced from each provider's /models API endpoint.
+ * Sends a minimal request to each model ID listed below and prints whether
+ * the provider accepts it. Use it when adding or removing models from
+ * LLM_REGISTRY / the side panel. Model IDs come from each provider's
+ * /models endpoint.
  *
  * Usage: node test/test_models.js
  * Requires: .env file with API keys (see .env.example)
- *
- * Last verified: 2026-03-21
- *
- * GLM (open.bigmodel.cn) — all chat completions compatible:
- *   ✓ glm-4.5           — OK
- *   ✓ glm-4.5-air       — OK
- *   ✓ glm-4.6           — OK
- *   ✓ glm-4.7           — OK
- *   ✓ glm-5             — OK
- *   ✓ glm-5-turbo       — OK
- *
- * GPT (api.openai.com) — chat completions compatible:
- *   ✓ gpt-4o            — OK
- *   ✓ gpt-4o-mini       — OK
- *   ✓ gpt-4.1           — OK
- *   ✓ gpt-4.1-mini      — OK
- *   ✓ gpt-4.1-nano      — OK
- *   ✓ gpt-5             — OK (requires max_completion_tokens)
- *   ✓ gpt-5-mini        — OK (requires max_completion_tokens)
- *   ✓ gpt-5-nano        — OK (requires max_completion_tokens)
- *   ✓ gpt-5.1           — OK (requires max_completion_tokens)
- *   ✓ gpt-5.2           — OK (requires max_completion_tokens)
- *   ✓ gpt-5.4           — OK (requires max_completion_tokens)
- *   ✓ gpt-5.4-mini      — OK (requires max_completion_tokens)
- *   ✓ gpt-5.4-nano      — OK (requires max_completion_tokens)
- *   ✓ o1                — OK (reasoning, requires max_completion_tokens)
- *   ✓ o3                — OK (reasoning)
- *   ✓ o3-mini           — OK (reasoning)
- *   ✓ o4-mini           — OK (reasoning)
- *   ✗ gpt-5-pro         — v1/responses only (chat completions非対応)
- *   ✗ gpt-5.2-pro       — v1/responses only (chat completions非対応)
- *   ✗ gpt-5.4-pro       — v1/responses only (chat completions非対応)
- *   ✗ o1-pro            — v1/responses only (chat completions非対応)
- *
- * Claude (api.anthropic.com) — all messages API compatible:
- *   ✓ claude-sonnet-4-6           — OK (latest sonnet)
- *   ✓ claude-sonnet-4-5-20250929  — OK
- *   ✓ claude-sonnet-4-20250514    — OK
- *   ✓ claude-opus-4-6             — OK (latest opus)
- *   ✓ claude-opus-4-5-20251101    — OK
- *   ✓ claude-opus-4-1-20250805    — OK
- *   ✓ claude-opus-4-20250514      — OK
- *   ✓ claude-haiku-4-5-20251001   — OK
- *   ✓ claude-3-haiku-20240307     — OK (legacy)
- *
- * Gemini (generativelanguage.googleapis.com) — all generateContent compatible:
- *   ✓ gemini-2.0-flash            — OK
- *   ✓ gemini-2.5-flash            — OK
- *   ✓ gemini-2.5-flash-lite       — OK
- *   ✓ gemini-2.5-pro              — OK
- *   ✓ gemini-3-flash-preview      — OK
- *   ✓ gemini-3.1-flash-lite-preview — OK
- *   ✓ gemini-3.1-pro-preview      — OK
  */
 
 import "dotenv/config";
