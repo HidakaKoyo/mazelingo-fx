@@ -64,7 +64,6 @@ const translations = {
     ttsPreviewLoading: "読込中…",
     minTextLength: "最小文字数",
     minTextLengthHint: "この文字数未満のテキストは翻訳しない",
-    addCurrentSite: "このサイトを追加",
     tabSettings: "設定",
     tabOutput: "アウトプット",
     tabExplanation: "解説",
@@ -174,7 +173,6 @@ const translations = {
     ttsPreviewLoading: "Loading…",
     minTextLength: "Min text length",
     minTextLengthHint: "Text shorter than this will not be translated",
-    addCurrentSite: "Add this site",
     tabSettings: "Settings",
     tabOutput: "Output",
     tabExplanation: "Explanation",
@@ -278,7 +276,6 @@ const elements = {
   ratioEnValue: document.getElementById("ratioEnValue"),
   ratioJaValue: document.getElementById("ratioJaValue"),
   save: document.getElementById("save"),
-  status: document.getElementById("status"),
   panelTitle: document.getElementById("panelTitle"),
   enableTitle: document.getElementById("enableTitle"),
   enableDesc: document.getElementById("enableDesc"),
@@ -508,10 +505,6 @@ function getProviderPrefix(modelName) {
     if (modelName.startsWith(prefix)) return prefix;
   }
   return null;
-}
-
-function getModelSelects() {
-  return [elements.model0, elements.model1, elements.model2];
 }
 
 function getModelControls() {
@@ -1527,7 +1520,6 @@ function switchTab(tab) {
   elements.tabContentOutput.classList.toggle("is-active", isOutput);
   elements.tabContentExplanation.classList.toggle("is-active", isExplanation);
   elements.save.style.display = isSettings ? "" : "none";
-  elements.status.style.display = isSettings ? "" : "none";
 }
 
 function updateRatioLabel() {

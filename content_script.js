@@ -263,10 +263,6 @@ function getShownLang(span) {
   return span.dataset.mlgShown || getSourceLang(span);
 }
 
-function getDisplayLang(span) {
-  return getShownLang(span);
-}
-
 function getVariantPlainText(span, lang) {
   const html = lang === "en" ? getEnglishText(span) : getJapaneseText(span);
   return stripHtmlTags(html);
@@ -315,7 +311,7 @@ function stripHtmlTags(html) {
 }
 
 function getTooltipText(span) {
-  const current = getDisplayLang(span);
+  const current = getShownLang(span);
   const other = getOppositeLang(current);
   const html = other === "en" ? getEnglishText(span) : getJapaneseText(span);
   return stripHtmlTags(html);
@@ -578,7 +574,7 @@ let ttsHideTimer = null;
 
 let ttsShowTimer = null;
 
-function showTtsBtn(span, event) {
+function showTtsBtn(span) {
   // Don't override if user is hovering the button itself
   if (hoverActions?.matches(":hover")) return;
   // Cancel any pending hide
@@ -605,7 +601,7 @@ function showTtsBtnImmediate(span) {
     ttsBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       e.preventDefault();
-      if (ttsBtnSpan) openTtsPopup(ttsBtnSpan, e);
+      if (ttsBtnSpan) openTtsPopup(ttsBtnSpan);
     });
 
     const explainBtn = document.createElement("button");
@@ -650,7 +646,7 @@ function clearTtsBtnHide() {
   if (ttsHideTimer) { clearTimeout(ttsHideTimer); ttsHideTimer = null; }
 }
 
-function openTtsPopup(span, event) {
+function openTtsPopup(span) {
   closeTtsPopup();
   const englishText = getEnglishText(span);
   const text = stripHtmlTags(englishText);
@@ -814,7 +810,7 @@ function bindInteractions(span) {
   span.addEventListener("mouseenter", (event) => {
     updateHoverAnchor(span, event);
     scheduleHoverTooltip(span);
-    showTtsBtn(span, event);
+    showTtsBtn(span);
   });
   span.addEventListener("mousemove", (event) => {
     updateHoverAnchor(span, event);

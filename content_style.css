@@ -254,9 +254,3 @@
 .mlg-tts-popup-close:hover {
   color: #374151;
 }
-
-.mlg-tooltip[data-placement="bottom"]::after {
-  top: -6px;
-  border-left: 1px solid #f3f4f6;
-  border-top: 1px solid #f3f4f6;
-}
