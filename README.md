@@ -1,50 +1,88 @@
-# Mazelingo — 文単位バイリンガルミックス翻訳 Chrome 拡張
+# Mazelingo-FX
 
-Webページの文章を**文単位で英日(任意の2言語)ミックス表示**する語学学習向け拡張です。
-「日本語と英語を混ぜて読んでいるうちに、英語を英語のまま理解できるようになる」を狙っています。
+Mazelingoは、Webページの文章を文単位で2言語にミックス表示する語学学習向けブラウザ拡張です。クリックによる原文との切り替え、hover対訳、文法解説、語彙管理、音声読み上げ（TTS）、サイト単位の有効化、翻訳cacheを備えます。
 
-- Chrome Web Store: https://chromewebstore.google.com/detail/mazelingo/bhdngeocokoeblnnlhjibojcadefimpi
-- Web版(貼り付けて試す): https://mazelingo-web.pages.dev
+Mazelingo-FXは、[Yeq6X/mazelingo](https://github.com/Yeq6X/mazelingo)を正式なupstreamとして保ちながら、Firefoxで継続的に利用・保守できるようにした派生版です。TypeScript、WXT、test環境への移行には[L4Ph/mazelingo](https://github.com/L4Ph/mazelingo)の実装を技術的なベースとして使用しています。
 
-## できること
+## 対応ブラウザ
 
-- ページ内の文を一定の割合(スライダー)で外国語に置き換えて表示。クリックで原文⇄訳文を反転
-- hoverで対訳の吹き出し、文法解説、語彙トラッカー、音声読み上げ(TTS)
-- 翻訳はあなたの **LLM APIキー**で動きます(OpenAI / Anthropic / Gemini / GLM / DeepSeek / **OpenRouter**)。拡張側にサーバーはなく、キーは Chrome Storage にだけ保存されます
-- サイトごとのオプトイン/オプトアウト、見えている範囲だけ翻訳、2層キャッシュでAPI消費を節約
+| ブラウザ          | 状態           | UI         | 備考                                                |
+| ----------------- | -------------- | ---------- | --------------------------------------------------- |
+| Firefox 140以降   | 第一ターゲット | Sidebar    | 通常版への恒久installにはMozillaの署名済みXPIが必要 |
+| Chrome / Chromium | 維持対象       | Side Panel | WXTのChrome MV3 buildを維持                         |
 
-## セットアップ
+build成功と、store配布・署名済みpackageの公開は別です。配布リンクがない場合、通常版Firefoxで恒久利用できる版はまだ提供されていません。
 
-1. ストアからインストール(または `chrome://extensions` → デベロッパーモード → 「パッケージ化されていない拡張機能を読み込む」でこのフォルダ)
-2. ツールバーのアイコン → サイドパネルの **設定** で、使うモデルを選び **APIキー**を入力して保存
-   - OpenAI: `gpt-4.1-mini` など / Anthropic: `claude-haiku-4-5-…` / Gemini: `gemini-2.5-flash` 等(Google AI Studio のキー)
-   - **OpenRouter**: モデルを `openrouter/<vendor>/<model>`(例 `openrouter/openai/gpt-4.1-mini`)と指定し、OpenRouter のキーを入力。一覧に無いモデルは「カスタム…」で任意IDを入力できます
-3. 翻訳したいページを開く(既定はオプトイン方式。サイドパネルの「現在のサイトを追加」で対象に)
+## Install
 
-うまく動かないときは、対象ページで DevTools(F12)のコンソールを開くと `[mlg:llm]` で始まる行に API からのエラー文が出ます。モデル名の誤り・キーの不一致・提供終了モデルが主な原因です(エラー文をサイドパネルに表示する改善は次のバージョンで予定)。
+### 通常版Firefox
 
-## 開発
+恒久installにはMozilla Add-ons（AMO）で署名されたXPIが必要です。署名済みXPIまたはAMO配布ページからinstallしてください。ローカル生成した未署名XPIや`.output/firefox-mv3/`を通常版Firefoxへ恒久installすることはできません。
+
+### Firefoxでtemporary install（開発・確認用）
+
+1. `npm ci`、`npm run build:firefox`を実行します。
+2. Firefoxで`about:debugging#/runtime/this-firefox`を開きます。
+3. 「一時的なアドオンを読み込む」を押します。
+4. `.output/firefox-mv3/manifest.json`を選択します。
+
+temporary installはFirefox終了時に解除されます。再起動後は読み込み直してください。普段の開発には`npm run dev:firefox`を使えます。
+
+### Chromeでtemporary install
+
+`npm run build:chrome`後、`chrome://extensions`でdeveloper modeを有効にし、「パッケージ化されていない拡張機能を読み込む」から`.output/chrome-mv3/`を選びます。
+
+## Configuration
+
+Sidebar / Side PanelでmodelとAPI key、翻訳対象siteを設定します。既定のinclude設定は`https://*`で、すべてのHTTPS siteが有効です。必要に応じてinclude / exclude listで対象を絞ってください。
+
+| Provider   | model例                          | key                      |
+| ---------- | -------------------------------- | ------------------------ |
+| OpenAI     | `gpt-4.1-mini`                   | OpenAI API key           |
+| Anthropic  | `claude-haiku-4-5`               | Anthropic API key        |
+| Gemini     | `gemini-2.5-flash`               | Google AI Studio API key |
+| OpenRouter | `openrouter/openai/gpt-4.1-mini` | OpenRouter API key       |
+| DeepSeek   | `deepseek-chat`                  | DeepSeek API key         |
+| GLM        | `glm-4-*`                        | Zhipu AI API key         |
+
+一覧にない対応modelは「カスタム」からIDを入力できます。ただし未知のproviderが自動的に使えるわけではなく、現在のprovider判定規則に一致する必要があります。
+
+### API keyの保存と送信
+
+API keyは暗号化されず、ブラウザ拡張の`storage.local`に平文保存されます。OSやbrowserの利用者から保護する秘密保管庫ではありません。共有端末や信頼できないprofileでは保存しないでください。
+
+翻訳、文法解説、writing feedback、語彙分析、quiz生成はbackgroundから選択provider（OpenAI、Anthropic、Gemini、OpenRouter、DeepSeek、GLM）へ直接送信されます。TTSはOpenAIへ直接送信されます。独自の中継serverやanalyticsはありませんが、providerには各機能の対象textと対応するAPI keyが送られます。provider側の利用規約とdata保持方針を確認してください。
+
+## Development
+
+Node.js 26とnpmを基準環境とします（CIと同じversion）。
 
 ```bash
-npm install
-npm run dev     # WXT 開発サーバーを起動 -> .output/chrome-mv3-devをインストール
-npm run build   # wxt build → .output/chrome-mv3/ を生成
-npm test        # vitest (純ロジック + jsdom DOM テスト)
-npm run test:e2e  # playwright (ビルド済み拡張を実ブラウザで E2E)
+git clone https://github.com/HidakaKoyo/mazelingo-fx.git
+cd mazelingo-fx
+npm ci
+npm run dev:firefox
+npm run build:firefox
+npm run build:chrome
+npm run compile
+npm run lint
+npm test
 ```
 
-TypeScript (strict)・WXT フレームワーク。構成は `CLAUDE.md` を参照。`test/` にモデル疎通スクリプトがあります(`.env.example` をコピーして `.env` にキーを置く)。
+詳細は[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)、確認項目は[docs/TESTING.md](docs/TESTING.md)を参照してください。
 
-## 仕組み(要点)
+## Architecture
 
-- content script が「子にブロック要素を持たない末端ブロック」を抽出し、改行(文末記号のあと)で釣り合ったHTML断片に分割してから LLM に渡す
-- LLM は HTML を保ったまま「読みの単位」(文・長文は節)に分割し、各単位を翻訳して返す。長すぎる単位はもう1回だけ再分割を依頼
-- 表示言語の割当は `location.href + 本文` をシードにした決定的な擬似乱数(同じページを再訪しても同じミックス)
+WXTがbackground、content script、Sidebar / Side Panel、optionsを各browser向けにbundleします。DOM抽出・翻訳・cacheなどの共通logicは`utils/`へ置き、browser固有のpanel操作とmanifest差分は小さな境界へ隔離します。詳細は[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)と[docs/FIREFOX_PORT.md](docs/FIREFOX_PORT.md)を参照してください。
 
-## コントリビュート
+## Upstreamと由来
 
-Issue / PR 歓迎です。バグ報告には「使ったモデル名」「サイドパネルに出たエラー文」「対象ページのURL」を添えてください。
+- Original project / official upstream: [Yeq6X/mazelingo](https://github.com/Yeq6X/mazelingo)
+- WXT implementation used as technical base: [L4Ph/mazelingo](https://github.com/L4Ph/mazelingo)
+- Mazelingo-FX: Firefox Sidebar対応、browser差分の隔離、multi-browser build・test・文書を追加
 
-## ライセンス
+L4Phの`feature/wxt-typescript-migration`にあるcommit `ddd6342`を、Yeq6X upstreamの`6b91045`を起点とする作業branchへfast-forwardして取り込みました。ファイルコピーではなく、由来をGitで追跡できます。remoteと追従手順は[docs/UPSTREAM.md](docs/UPSTREAM.md)に記録しています。
 
-MIT
+## License
+
+MIT Licenseです。元projectのcopyright noticeと本文は[LICENSE](LICENSE)に保持しています。L4Ph版を技術的なベースにした事実は上記のとおり明示します。
