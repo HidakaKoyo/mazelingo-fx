@@ -247,7 +247,6 @@ function reconcileIndexedBlocks(rawBlocks, expectedIndices) {
 
 async function translateBatch(payload) {
   const config = await loadConfig();
-  console.log("[mlg:bg] translateBatch called", { models: config.models, apiKeysPresent: Object.keys(config.apiKeys), from: payload.from, to: payload.to, blockCount: payload.htmlBlocks?.length });
   const { htmlBlocks, from, to } = payload;
   if (!Array.isArray(htmlBlocks) || htmlBlocks.length === 0) {
     return { blocks: [] };
@@ -285,7 +284,6 @@ async function translateBatch(payload) {
 
   const cacheHits = htmlBlocks.length - uncachedBlocks.length;
   if (cacheHits > 0) {
-    console.log(`[mlg:bg] cache hit: ${cacheHits}/${htmlBlocks.length} blocks`);
   }
 
   // If all cached, return immediately
@@ -301,11 +299,9 @@ async function translateBatch(payload) {
   const acceptedBlocks = new Map();
   let missingIndices = expectedIndices;
 
-  console.log("[mlg:bg] calling LLM chain with models:", config.models, `(${uncachedBlocks.length} uncached of ${htmlBlocks.length})`);
   try {
     const messages = buildTranslationMessages(indexedBlocks, fromName, toName);
     const llmResult = await callLLMChain(config.models, messages, config.apiKeys, TRANSLATION_SCHEMA);
-    console.log("[mlg:bg] LLM result:", llmResult);
     const reconciliation = reconcileIndexedBlocks(llmResult?.blocks, expectedIndices);
     for (const [index, block] of reconciliation.acceptedBlocks) {
       acceptedBlocks.set(index, block);
@@ -1017,10 +1013,8 @@ Return JSON: { "prompt": "your prompt text here" }`,
     return true;
   }
   if (type === "mlg:translate") {
-    console.log("[mlg:bg] received mlg:translate", payload);
     translateBatch(payload || {})
       .then((res) => {
-        console.log("[mlg:bg] translate success, blocks:", res.blocks?.length);
         sendResponse(res);
       })
       .catch((error) => {

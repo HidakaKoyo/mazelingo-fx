@@ -194,7 +194,6 @@ function findLeafBlocks(root) {
       Array.from(root.children).forEach(walk);
     }
   }
-  console.log("[mlg:cs] findLeafBlocks found", results.length, "blocks");
   return results;
 }
 
@@ -1201,12 +1200,6 @@ function queueBlockTranslate() {
 }
 
 async function translatePendingBlocks() {
-  console.log("[mlg:cs] translatePendingBlocks called", {
-    enabled: STATE.config.enabled,
-    models: STATE.config.models,
-    pageAllowed: isPageAllowed(),
-    pendingCount: STATE.pendingBlocks.length,
-  });
   if (!STATE.config.enabled || !STATE.config.models || STATE.config.models.length === 0 || !isPageAllowed()) {
     STATE.pendingBlocks = [];
     return;
@@ -1218,7 +1211,6 @@ async function translatePendingBlocks() {
   const enBlocks = pending.filter(b => b.lang === "en");
   const jaBlocks = pending.filter(b => b.lang === "ja");
 
-  console.log("[mlg:cs] translating blocks", { en: enBlocks.length, ja: jaBlocks.length });
 
   await Promise.all([
     enBlocks.length ? translateBlockGroup(enBlocks, "en", "ja") : Promise.resolve(),
@@ -1230,7 +1222,6 @@ const MAX_BLOCKS_PER_BATCH = 3;
 const MAX_CONCURRENT_BATCHES = 3;
 
 async function translateBlockGroup(blocks, from, to) {
-  console.log("[mlg:cs] translateBlockGroup", { from, to, blockCount: blocks.length });
   const batches = [];
   for (let i = 0; i < blocks.length; i += MAX_BLOCKS_PER_BATCH) {
     batches.push(blocks.slice(i, i + MAX_BLOCKS_PER_BATCH));
@@ -1257,7 +1248,6 @@ async function translateBlockBatch(blocks, from, to) {
     payload: { htmlBlocks: allParts, from, to },
   });
 
-  console.log("[mlg:cs] translateBlockBatch response:", response);
 
   if (!response || response.error) {
     console.error("[mlg:cs] block translate failed:", response?.error);
@@ -1317,7 +1307,6 @@ async function translateBlockBatch(blocks, from, to) {
         sentences.push({ source: block.separators[p], translation: block.separators[p], isSeparator: true });
       }
     }
-    console.log("[mlg:cs] applying block", { blockIndex, partCount, sentenceCount: sentences.length, realSentences: sentences.filter(s => !s.isSeparator).length });
     applyBlockTranslation(block.element, sentences, from, block.atoms);
   });
 }
@@ -1346,7 +1335,6 @@ function applyBlockTranslation(block, sentences, sourceLang, retainedAtoms) {
     block.dataset.mlgFailed = "1";
     return;
   }
-  console.log("[mlg:cs] applyBlockTranslation", { sourceLang, sentenceCount: sentences.length });
 
   const stream = buildTokenStream(block, isMlgSentenceNode);
   const streamAtoms = new Map(

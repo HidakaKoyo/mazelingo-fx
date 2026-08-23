@@ -192,12 +192,7 @@ const FORMAT_HANDLERS = {
 
 // --- Core functions ---
 
-function buildLLMRequest(modelName, messages, apiKey, schema) {
-  const provider = resolveProvider(modelName);
-  if (!provider) {
-    throw new Error(`No provider found for model: ${modelName}`);
-  }
-
+function buildLLMRequest(provider, modelName, messages, apiKey, schema) {
   const handler = FORMAT_HANDLERS[provider.entry.format];
   const requestModelName = provider.entry.stripPrefix
     ? modelName.slice(provider.entry.stripPrefix.length)
@@ -212,16 +207,11 @@ function buildLLMRequest(modelName, messages, apiKey, schema) {
   );
 }
 
-async function callLLM(modelName, messages, apiKey, schema) {
-  const provider = resolveProvider(modelName);
-  if (!provider) {
-    throw new Error(`No provider found for model: ${modelName}`);
-  }
-
+async function callLLM(provider, modelName, messages, apiKey, schema) {
   const handler = FORMAT_HANDLERS[provider.entry.format];
-  const { url, options } = buildLLMRequest(modelName, messages, apiKey, schema);
+  const { url, options } = buildLLMRequest(provider, modelName, messages, apiKey, schema);
 
-  console.log(`[mlg:llm] calling ${modelName} (${provider.entry.format}) → ${url}`);
+  console.log(`[mlg:llm] calling ${modelName} (${provider.entry.format}) ${url}`);
   const startTime = performance.now();
 
   const response = await fetch(url, options);
@@ -240,12 +230,11 @@ async function callLLM(modelName, messages, apiKey, schema) {
   }
 
   const data = await response.json();
-  console.log(`[mlg:llm] ${modelName} response [${elapsed}ms]:`, JSON.stringify(data).slice(0, 500));
+  console.log(`[mlg:llm] ${modelName} succeeded [${elapsed}ms]`);
   return handler.parse(data);
 }
 
 async function callLLMChain(models, messages, apiKeys, schema) {
-  console.log("[mlg:llm] chain start, models:", models, "apiKeys present:", Object.keys(apiKeys));
   const errors = [];
 
   for (const modelName of models) {
@@ -264,9 +253,7 @@ async function callLLMChain(models, messages, apiKeys, schema) {
     }
 
     try {
-      const result = await callLLM(modelName, messages, apiKey, schema);
-      console.log(`[mlg:llm] ${modelName} succeeded`);
-      return result;
+      return await callLLM(provider, modelName, messages, apiKey, schema);
     } catch (e) {
       console.error(`[mlg:llm] ${modelName} failed:`, e.message);
       errors.push(e);
@@ -281,12 +268,4 @@ async function callLLMChain(models, messages, apiKeys, schema) {
   throw new Error("No API keys available for any of the specified models");
 }
 
-export {
-  LLM_REGISTRY,
-  TRANSLATION_SCHEMA,
-  buildGoogleRequest,
-  buildLLMRequest,
-  parseGoogleResponse,
-  callLLM,
-  callLLMChain,
-};
+export { LLM_REGISTRY, TRANSLATION_SCHEMA, callLLMChain };
