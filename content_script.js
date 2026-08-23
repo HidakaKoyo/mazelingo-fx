@@ -16,9 +16,11 @@ if (
 ) {
   throw new Error("[mlg:cs] dom-overlay.js must load before content_script.js");
 }
+// Mirrors config.js. Content scripts are not ES modules and cannot import it,
+// so the two must be kept in sync.
 const DEFAULT_CONFIG = {
   enabled: true,
-  models: ["glm-4.7-flash"],
+  models: ["gpt-5.2"],
   apiKeys: {},
   pageListInclude: "https://*",
   pageListExclude: "",
@@ -1172,7 +1174,7 @@ function processLeafBlock(block) {
   if (block.dataset.mlgBlock === "1") return;
   if (hasBlockedAncestor(block)) return;
   const text = block.textContent || "";
-  if (!text.trim() || text.trim().length < (STATE.config.minTextLength || 5)) return;
+  if (!text.trim() || text.trim().length < STATE.config.minTextLength) return;
   block.dataset.mlgBlock = "1";
   block.dataset.mlgTranslating = "1";
   if (shouldMarkOutput(text.trim())) {

@@ -1,4 +1,4 @@
-import { mergeConfig } from "./config.js";
+import { DEFAULT_CONFIG, mergeConfig } from "./config.js";
 import { LLM_REGISTRY } from "./llm.js";
 
 const STORAGE_KEY = "mlg_config";
@@ -637,7 +637,7 @@ function collectFormState() {
     enabled: elements.enabled.checked,
     mixLanguage: elements.mixLanguage.checked,
     translateButtons: elements.translateButtons.checked,
-    minTextLength: Number(elements.minTextLength.value || 5),
+    minTextLength: Number(elements.minTextLength.value) || DEFAULT_CONFIG.minTextLength,
     pageListInclude: elements.pageListInclude.value,
     pageListExclude: elements.pageListExclude.value,
     models: getSelectedModels(),
