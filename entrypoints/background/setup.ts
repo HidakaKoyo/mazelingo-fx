@@ -1,6 +1,7 @@
 import { defineBackground } from "wxt/utils/define-background";
 import { browser } from "wxt/browser";
 import { DEFAULT_CONFIG } from "@/utils/config";
+import { openToolbarPanel } from "@/utils/browser-actions";
 import { STORAGE_KEY } from "@/utils/keys";
 import { handleMessage } from "./handlers";
 import type { Sender } from "./handlers";
@@ -33,9 +34,6 @@ export default defineBackground(() => {
     void initializeConfigIfNeeded();
   });
   browser.action.onClicked.addListener((tab: Readonly<{ id?: number }>) => {
-    const tabId = tab.id;
-    if (tabId !== undefined) {
-      void browser.sidePanel.open({ tabId }).catch(() => {});
-    }
+    void openToolbarPanel(tab.id).catch(() => {});
   });
 });

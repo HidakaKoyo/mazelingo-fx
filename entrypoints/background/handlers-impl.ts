@@ -7,6 +7,7 @@ import {
   buildVocabAnalysisMessages,
 } from "@/utils/prompts";
 import { callLLMChain } from "@/utils/llm";
+import { openExplanationSidePanel } from "@/utils/browser-actions";
 import { translateBatch } from "@/utils/translate";
 import {
   FEEDBACK_SCHEMA,
@@ -82,14 +83,11 @@ export async function openExplanation(
 ): Promise<{ ok: true }> {
   const request: OpenExplanationOutput = { ...payload, requestedAt: Date.now() };
   await explanationStore.set(request);
-  const openSidePanel = browser.sidePanel?.open;
   const tabId = sender.tab?.id;
-  if (tabId !== undefined && typeof openSidePanel === "function") {
-    try {
-      await openSidePanel({ tabId });
-    } catch (error) {
-      console.warn("[mlg:bg] side panel open failed:", getErrorMessage(error));
-    }
+  try {
+    await openExplanationSidePanel(tabId);
+  } catch (error) {
+    console.warn("[mlg:bg] explanation side panel open failed:", getErrorMessage(error));
   }
   void browser.runtime
     .sendMessage({ payload: request, type: "mlg:openExplanation" })

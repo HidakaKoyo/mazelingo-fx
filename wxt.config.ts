@@ -1,38 +1,58 @@
 import { defineConfig } from "wxt";
 
+const ICONS = {
+  128: "icons/icon128.png",
+  16: "icons/icon16.png",
+  32: "icons/icon32.png",
+  48: "icons/icon48.png",
+} as const;
+
 export default defineConfig({
-  manifest: {
-    action: {
-      default_icon: {
-        128: "icons/icon128.png",
-        16: "icons/icon16.png",
-        32: "icons/icon32.png",
-        48: "icons/icon48.png",
+  manifest: ({ browser }) => {
+    const isFirefox = browser === "firefox";
+    return {
+      action: {
+        default_icon: ICONS,
+        default_title: "Mazelingo",
       },
-      default_title: "Mazelingo",
-    },
-    description: "Sentence-level bilingual mix translator.",
-    host_permissions: ["<all_urls>"],
-    icons: {
-      128: "icons/icon128.png",
-      16: "icons/icon16.png",
-      32: "icons/icon32.png",
-      48: "icons/icon48.png",
-    },
-    name: "Mazelingo",
-    permissions: ["storage", "sidePanel", "activeTab", "tabs"],
-    side_panel: {
-      default_path: "sidepanel.html",
-    },
-    web_accessible_resources: [
-      {
-        resources: ["vocab_data.json", "situations.json"],
-        matches: ["<all_urls>"],
-      },
-    ],
+      description: "Sentence-level bilingual mix translator.",
+      host_permissions: ["<all_urls>"],
+      icons: ICONS,
+      name: "Mazelingo-FX",
+      permissions: isFirefox
+        ? ["storage", "activeTab", "tabs"]
+        : ["storage", "sidePanel", "activeTab", "tabs"],
+      ...(isFirefox
+        ? {
+            browser_specific_settings: {
+              gecko: {
+                data_collection_permissions: {
+                  required: ["authenticationInfo", "websiteContent"],
+                },
+                id: "mazelingo-fx@hidakakoyo.github.io",
+                strict_min_version: "140.0",
+              },
+            },
+            sidebar_action: {
+              default_icon: "icons/icon128.png",
+              default_panel: "sidepanel.html",
+              default_title: "Mazelingo",
+            },
+          }
+        : {
+            side_panel: {
+              default_path: "sidepanel.html",
+            },
+          }),
+      web_accessible_resources: [
+        {
+          resources: ["vocab_data.json", "situations.json"],
+          matches: ["<all_urls>"],
+        },
+      ],
+    };
   },
   zip: {
-    // WXT builds a `mazelingo.zip` artifact for Chrome Web Store distribution.
-    name: "mazelingo",
+    name: "mazelingo-fx",
   },
 });
