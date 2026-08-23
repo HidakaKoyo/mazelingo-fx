@@ -204,6 +204,15 @@ function testNonOkErrorSurfacesApiMessage(): void {
       /LLM request failed \(401\): Invalid API key/u,
     );
   });
+
+  it("redacts the API key if a provider echoes it in an error", async () => {
+    const mockResponse = errorResponse(401, "Rejected credential secret-test-key");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
+
+    const request = callLLM(provider("gpt-4.1-mini"), "gpt-4.1-mini", MSGS, "secret-test-key");
+    await expect(request).rejects.toThrow(/Rejected credential \[REDACTED\]/u);
+    await expect(request).rejects.not.toThrow(/secret-test-key/u);
+  });
 }
 
 function testGeminiErrorPayload(): void {

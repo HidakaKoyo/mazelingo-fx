@@ -67,6 +67,7 @@ export function buildAnalysisHtml(
   t: Readonly<Translations>,
 ): string {
   const encoded = encodeURIComponent(word);
+  const pronunciationUrl = `https://translate.google.com/?sl=auto&tl=en&text=${encoded}&op=translate`;
   let html = "";
 
   html += `<div class="modal-section">
@@ -90,7 +91,7 @@ export function buildAnalysisHtml(
   html += `<div class="modal-section">
     <div class="modal-section-title">${escapeHtml(t.modalPronunciation)}</div>
     <div class="modal-field"><div class="modal-field-label">${escapeHtml(t.modalIpa)}</div><div class="modal-field-value">${escapeHtml(data.pronunciation.ipa)}</div></div>
-    <div class="modal-field"><a class="modal-link" href="${escapeHtml(data.pronunciation.googleTranslateUrl)}" target="_blank" rel="noopener">${escapeHtml(t.modalListen)} (Google Translate) ↗</a></div>
+    <div class="modal-field"><a class="modal-link" href="${pronunciationUrl}" target="_blank" rel="noopener">${escapeHtml(t.modalListen)} (Google Translate) ↗</a></div>
   </div>`;
 
   html += `<div class="modal-section">

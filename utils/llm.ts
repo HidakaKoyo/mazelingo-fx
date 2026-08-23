@@ -46,18 +46,20 @@ export async function callLLM(
   const elapsed = Math.round(performance.now() - startTime);
   if (!response.ok) {
     const text = await response.text();
-    console.error(
-      `[mlg:llm] ${modelName} failed (${response.status}) [${elapsed}ms]:`,
-      text.slice(0, 500),
-    );
+    console.error(`[mlg:llm] ${modelName} failed (${response.status}) [${elapsed}ms]`);
     const apiMessage = parseErrorMessage(text);
-    const detail = apiMessage ?? text;
+    const detail =
+      apiMessage === null ? "Provider returned an error" : redactSecret(apiMessage, apiKey);
     throw new Error(`LLM request failed (${response.status}): ${detail}`);
   }
 
   const data: unknown = await response.json();
   console.log(`[mlg:llm] ${modelName} succeeded [${elapsed}ms]`);
   return handler.parse(data);
+}
+
+function redactSecret(message: string, secret: string): string {
+  return secret === "" ? message : message.replaceAll(secret, "[REDACTED]");
 }
 
 function wrapError(error: unknown): Error {

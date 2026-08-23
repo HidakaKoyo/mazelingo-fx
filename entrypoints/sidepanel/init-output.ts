@@ -17,6 +17,13 @@ import { renderVocabSuggestions } from "./modal";
 import { loadVocab, setLastMatchedVocab } from "./vocab";
 import { feedback, normaDone, tts } from "./rpc";
 
+function showFeedbackStatus(className: string, message: string): void {
+  const status = document.createElement("div");
+  status.className = className;
+  status.textContent = message;
+  elements.outputFeedback.replaceChildren(status);
+}
+
 export async function addCurrentSiteTo(textarea: HTMLTextAreaElement): Promise<void> {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
   if (tab?.url === undefined) {
@@ -54,7 +61,7 @@ async function handleOutputSend(): Promise<void> {
   elements.outputSend.disabled = true;
   elements.outputSend.textContent = t.outputSending;
   elements.outputFeedbackSection.style.display = "";
-  elements.outputFeedback.innerHTML = `<div class="feedback-loading">${t.outputSending}</div>`;
+  showFeedbackStatus("feedback-loading", t.outputSending);
 
   const quizContext = getCurrentOutputType() === "quiz" ? elements.quizPrompt.textContent : "";
   const response = await feedback({
@@ -67,7 +74,7 @@ async function handleOutputSend(): Promise<void> {
   elements.outputSend.textContent = t.outputSend;
 
   if (response === undefined || response.error !== undefined) {
-    elements.outputFeedback.innerHTML = `<div class="feedback-error">${response?.error ?? "Unknown error"}</div>`;
+    showFeedbackStatus("feedback-error", response?.error ?? "Unknown error");
     return;
   }
   renderFeedback(response);

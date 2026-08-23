@@ -95,8 +95,7 @@ export async function tts(
       buildAudioRequest(payload, apiKey),
     );
     if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`TTS failed (${response.status}): ${text.slice(0, 200)}`);
+      throw new Error(`TTS failed (${response.status})`);
     }
     const buffer = await response.arrayBuffer();
     const bytes = new Uint8Array(buffer);
