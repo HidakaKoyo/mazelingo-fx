@@ -1,19 +1,26 @@
 {
+  "name": "mazelingo-fx",
   "version": "0.5.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "wxt",
+    "dev:firefox": "wxt -b firefox --mv3",
     "build": "wxt build",
+    "build:chrome": "wxt build -b chrome --mv3",
+    "build:firefox": "wxt build -b firefox --mv3",
     "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox --mv3",
     "compile": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run && node --test scripts/verify-manifests.test.mjs",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:models": "node test/test_models.js",
     "lint": "oxlint",
+    "lint:firefox": "npx --yes web-ext@10.6.0 lint --source-dir .output/firefox-mv3 --warnings-as-errors=false",
     "lint:fix": "oxlint --fix",
-    "fmt": "oxfmt"
+    "fmt": "oxfmt",
+    "verify:manifests": "node scripts/verify-manifests.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
