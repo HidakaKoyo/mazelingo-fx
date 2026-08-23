@@ -112,14 +112,24 @@ function isPageAllowed() {
   return !excluded;
 }
 
+// Resolves with { error } when the service worker is unreachable so callers
+// see the same shape as an application-level failure.
 function sendMessage(message) {
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage(message, resolve);
+    chrome.runtime.sendMessage(message, (response) => {
+      const err = chrome.runtime.lastError;
+      if (err) {
+        resolve({ error: err.message });
+        return;
+      }
+      resolve(response);
+    });
   });
 }
 
 async function loadConfig() {
   const config = await sendMessage({ type: "mlg:getConfig" });
+  if (config?.error) throw new Error(`getConfig failed: ${config.error}`);
   return mergeConfig(config);
 }
 
@@ -1489,7 +1499,7 @@ function stop() {
     renderSpanDisplay(span, span.dataset.mlgLang);
   });
   hideTooltip();
-  // これが無いと stop 後の start() が永久に空振りする(設定 OFF→ON、除外ページ→対象ページで再開できない)
+  // start() is a no-op while started is true, so clear it to allow a restart.
   STATE.started = false;
 }
 
@@ -1524,9 +1534,11 @@ async function init() {
   });
 }
 
-// SPA(X など)はページ再読み込みなしで URL が変わるため、読み込み時の対象判定が古くなる。
-// content script は隔離ワールドなのでページ側の history.pushState はフックできない → URL 文字列を監視する
-// (DOM 変化のたびに安価な比較+1秒ごとのフォールバック)。変化時は設定変更時と同じ start/stop 判定を通す。
+// Single-page apps change the URL without reloading, which can move the page in
+// or out of the opt-in/opt-out lists. The content script runs in an isolated
+// world and cannot hook the page's history.pushState, so location.href is
+// compared on every DOM mutation and once per second; on change the same
+// start/stop decision as a settings update is applied.
 let lastSeenUrl = location.href;
 function evaluatePageForCurrentUrl() {
   if (location.href === lastSeenUrl) return;
@@ -1535,8 +1547,9 @@ function evaluatePageForCurrentUrl() {
   const shouldTranslate = STATE.config.enabled && isPageAllowed();
   if (shouldTranslate && !STATE.started) {
     start();
-    // 以前に翻訳済み→原文表示に戻したブロックを、現在の割合設定でミックス表示に戻す
-    if (typeof refreshDisplay === "function") refreshDisplay();
+    // Blocks translated earlier were reverted to their source by stop();
+    // re-apply the current mix ratio to them.
+    refreshDisplay();
   } else if (!shouldTranslate && STATE.started) {
     stop();
   }

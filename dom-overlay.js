@@ -1,6 +1,7 @@
-// synced from mazelingo-ios/core/src/overlay.js @30f96cc
-// Wrapped in an IIFE: Chrome content scripts of one extension share a global scope,
-// so top-level declarations here must not leak (they collided with content_script.js).
+// DOM-preserving translation overlay: wraps translation units on the original
+// text-node stream and swaps variants in place, keeping element structure intact.
+// Content scripts of one extension share a global scope, so everything is kept
+// inside an IIFE and exposed through globalThis.MazelingoDomOverlay at the end.
 (() => {
 const MLG_ATOM_TAGS = new Set([
   "svg", "img", "video", "canvas", "input", "select", "textarea", "iframe",
@@ -527,8 +528,6 @@ if (globalThis.__MLG_TEST__) {
   };
 }
 
-
-// Chrome content-script global wrapper (not part of the synced core implementation).
 globalThis.MazelingoDomOverlay = Object.freeze({
   isMlgIgnoredElement,
   isMlgAtom,

@@ -20,7 +20,6 @@ npm run build      # terserで圧縮 → dist/ 生成 + mazelingo.zip (Chrome We
 - `background.js` — service worker。翻訳バッチ・2層キャッシュ・長ユニット再分割
 - `content_script.js` + `content_style.css` — ページ注入(リーフブロック検出・改行境界での断片化)・翻訳表示UI(トグル/ツールチップ)
 - `popup.html` / `popup.js` — サイドパネルUI(設定/出力タブ、最大規模ファイル)
-- `options.html` / `options.js` — 設定ページ
 - `llm.js` — OpenAI / Anthropic / Gemini / GLM / DeepSeek / OpenRouter のリクエストビルダーと呼び分け (callLLMChain)
 - `config.js` — デフォルト設定とマージ処理
 - `vocab_data.json` / `situations.json` — 学習コンテンツ (web_accessible_resources)

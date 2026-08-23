@@ -94,18 +94,17 @@ function buildCacheKey(html, from, to) {
   return `${from}:${to}:${html}`;
 }
 
-// 永続キャッシュは1つのオブジェクトとして保存されているので、翻訳1回につき
-// 読み込み1回・書き込み1回にまとめる。以前はブロックごとに全体を読み書きしていて、
-// エントリが溜まる(最大1000件、キーはHTML全文)ほどページ翻訳が重くなっていた。
+// The persistent layer is stored as one object (keys are full HTML, up to
+// CACHE_MAX_ENTRIES), so it is read from storage once and kept in memory
+// rather than re-read per block.
 async function loadPersistentCache() {
   const result = await chrome.storage.local.get(CACHE_STORAGE_KEY);
   return result[CACHE_STORAGE_KEY] || {};
 }
 
-// 永続キャッシュは service worker の寿命中は1つの共有オブジェクトとして保持する。
-// 以前は translateBatch ごとに「全体を読む→足す→全体を書き戻す」だったため、並行バッチが
-// 互いの結果を上書きして消していた(last-writer-wins)。SW が停止してメモリ層が消えると
-// 永続層にほとんど残っておらず「キャッシュが効かない」状態になっていた。
+// One shared cache object for the service worker's lifetime. Concurrent
+// translateBatch calls all add to the same object, and saves are debounced and
+// serialized (schedulePersistentSave), so batches cannot overwrite each other.
 let sharedPersistentCachePromise = null;
 function getSharedPersistentCache() {
   if (!sharedPersistentCachePromise) {
@@ -120,7 +119,8 @@ function getSharedPersistentCache() {
 let persistentSaveTimer = null;
 let persistentSaveChain = Promise.resolve();
 function schedulePersistentSave(cache) {
-  // 500ms デバウンスし、保存自体は直列化する(同時 set による取りこぼし防止)
+  // Debounce 500ms and serialize writes so overlapping storage.set calls
+  // cannot drop entries.
   if (persistentSaveTimer) clearTimeout(persistentSaveTimer);
   persistentSaveTimer = setTimeout(() => {
     persistentSaveTimer = null;
@@ -154,7 +154,8 @@ async function getCacheStats() {
 
 async function clearTranslationCache() {
   memoryCache.clear();
-  // 共有オブジェクトも空にする(保持したままだと次の保存で消した分が復活する)
+  // Empty the shared object too; otherwise the next scheduled save would
+  // write the old entries back.
   if (persistentSaveTimer) { clearTimeout(persistentSaveTimer); persistentSaveTimer = null; }
   const shared = await getSharedPersistentCache();
   for (const key of Object.keys(shared)) delete shared[key];

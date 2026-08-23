@@ -92,8 +92,8 @@ function parseOpenAIResponse(data) {
 }
 
 // --- Anthropic (Claude) ---
-// Anthropic doesn't support structured output natively.
-// Use tool_use to force JSON schema compliance.
+// The schema is not sent to Anthropic; JSON output is forced by prefilling the
+// assistant turn with "{" and instructing the model in the system prompt.
 
 function buildAnthropicRequest(modelName, messages, apiKey, baseUrl, _schema) {
   const systemMsg = messages.find(m => m.role === "system");

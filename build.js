@@ -19,13 +19,11 @@ const JS_FILES = [
   "content_script.js",
   "config.js",
   "llm.js",
-  "options.js",
   "popup.js",
 ];
 
 const COPY_FILES = [
   "manifest.json",
-  "options.html",
   "popup.html",
   "content_style.css",
   "vocab_data.json",
