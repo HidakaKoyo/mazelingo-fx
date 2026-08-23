@@ -27,10 +27,13 @@ Webページの文章を**文単位で英日(任意の2言語)ミックス表示
 
 ```bash
 npm install
-npm run build   # terser で dist/ と mazelingo.zip を生成
+npm run dev     # WXT 開発サーバーを起動 -> .output/chrome-mv3-devをインストール
+npm run build   # wxt build → .output/chrome-mv3/ を生成
+npm test        # vitest (純ロジック + jsdom DOM テスト)
+npm run test:e2e  # playwright (ビルド済み拡張を実ブラウザで E2E)
 ```
 
-Vanilla JS(ESM)・フレームワーク不使用。構成は `CLAUDE.md` を参照。`test/` にモデル疎通スクリプトがあります(`.env.example` をコピーして `.env` にキーを置く)。
+TypeScript (strict)・WXT フレームワーク。構成は `CLAUDE.md` を参照。`test/` にモデル疎通スクリプトがあります(`.env.example` をコピーして `.env` にキーを置く)。
 
 ## 仕組み(要点)
 
