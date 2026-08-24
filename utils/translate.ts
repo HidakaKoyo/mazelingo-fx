@@ -89,13 +89,6 @@ export async function translateBatch(
   error?: string;
 }> {
   const config = await deps.getConfig();
-  console.log("[mlg:bg] translateBatch called", {
-    apiKeysPresent: Object.keys(config.apiKeys),
-    blockCount: payload.htmlBlocks?.length,
-    from: payload.from,
-    models: config.models,
-    to: payload.to,
-  });
   const { htmlBlocks, from, to } = payload;
   if (htmlBlocks.length === 0) {
     return { blocks: [] };
@@ -106,22 +99,11 @@ export async function translateBatch(
     to,
     deps,
   );
-  const cacheHits = htmlBlocks.length - resolution.uncachedBlocks.length;
-  if (cacheHits > 0) {
-    console.log(`[mlg:bg] cache hit: ${cacheHits}/${htmlBlocks.length} blocks`);
-  }
   if (resolution.uncachedBlocks.length === 0) {
     return { blocks: resolution.blocks };
   }
   const { fromName, toName } = namesFor(from, to);
-  const fresh = await translateUncached(
-    resolution.uncachedBlocks,
-    htmlBlocks.length,
-    fromName,
-    toName,
-    deps,
-    config,
-  );
+  const fresh = await translateUncached(resolution.uncachedBlocks, fromName, toName, deps, config);
   await storeFresh(htmlBlocks, resolution.uncachedIndices, fresh, from, to, deps);
   return { blocks: buildFinalBlocks(resolution.blocks, resolution.uncachedIndices, fresh) };
 }

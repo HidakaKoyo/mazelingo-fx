@@ -49,13 +49,13 @@ export function namesFor(from: string, to: string): LangPair {
   return { fromName: LANG_NAMES[from] ?? from, toName: LANG_NAMES[to] ?? to };
 }
 async function resplitLongUnit(
-  source: string,
+  unit: TranslationUnit,
   fromName: string,
   toName: string,
   deps: Readonly<TranslateDeps>,
   config: Readonly<ReadonlyConfig>,
 ): Promise<TranslationBlock["sentences"]> {
-  const messages = buildResplitMessages(source, fromName, toName);
+  const messages = buildResplitMessages(unit.source, fromName, toName);
   const llmResult: unknown = await deps.llm(
     config.models,
     messages,
@@ -64,7 +64,7 @@ async function resplitLongUnit(
   );
   const result = isResplitResult(llmResult) ? llmResult : undefined;
   const sentences = result?.blocks?.[0]?.sentences;
-  const rejoin = sourcesRejoin(sentences, source);
+  const rejoin = sourcesRejoin(sentences, unit.source);
   if (result?.blocks?.length === 1 && sentences && sentences.length >= 2 && rejoin) {
     return sentences;
   }
@@ -73,7 +73,7 @@ async function resplitLongUnit(
     sourcesRejoin: rejoin,
     unitCount: sentences?.length,
   });
-  return [{ source, translation: "" }];
+  return [unit];
 }
 
 export async function resplitBlock(
@@ -86,7 +86,7 @@ export async function resplitBlock(
   const resolved = await Promise.all(
     block.sentences.map((unit) =>
       isLongTranslationUnit(unit.source)
-        ? resplitLongUnit(unit.source, fromName, toName, deps, config)
+        ? resplitLongUnit(unit, fromName, toName, deps, config)
         : Promise.resolve([unit]),
     ),
   );
@@ -116,7 +116,6 @@ async function batchTranslate(
       TRANSLATION_SCHEMA,
     );
     const rawBlocks = isRecord(llmResult) ? llmResult.blocks : undefined;
-    console.log("[mlg:bg] LLM result:", llmResult);
     const reconciliation = reconcileIndexedBlocks(rawBlocks, fromIndices);
     for (const [index, block] of reconciliation.acceptedBlocks) {
       accepted.set(index, block);
@@ -192,7 +191,6 @@ async function retryOne(
 
 export async function translateUncached(
   blocks: ReadonlyArray<Readonly<IndexedBlock>>,
-  total: number,
   fromName: string,
   toName: string,
   deps: Readonly<TranslateDeps>,
@@ -200,11 +198,6 @@ export async function translateUncached(
 ): Promise<ReadonlyArray<ReadonlyTranslationBlock | null>> {
   const expected = blocks.map((_, index) => index);
   const indexedBlocks = blocks.map((htmlBlock, i) => ({ html: htmlBlock.html, i }));
-  console.log(
-    "[mlg:bg] calling LLM chain with models:",
-    config.models,
-    `(${blocks.length} uncached of ${total})`,
-  );
   const outcome = await batchTranslate(indexedBlocks, expected, fromName, toName, deps, config);
   const retried = await Promise.all(
     outcome.missing.map((index) => retryOne(index, indexedBlocks, fromName, toName, deps, config)),
