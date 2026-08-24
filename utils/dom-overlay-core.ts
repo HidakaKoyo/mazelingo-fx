@@ -1,9 +1,7 @@
 /**
  * Core DOM overlay: shared constants, node-meta types, and primitive DOM
- * helpers used across the overlay modules.
- *
- * Originally synced from mazelingo-ios/core/src/overlay.js @30f96cc; the pure
- * helpers are exported so they can be unit-tested in isolation.
+ * helpers used across the overlay modules. The pure helpers are exported so
+ * they can be unit-tested in isolation.
  *
  * Type note: `mlg*` properties on DOM nodes are convention-based. They are
  * attached here and read by the content entrypoint; TS has no structural type

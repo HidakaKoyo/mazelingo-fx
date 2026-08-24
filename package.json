@@ -11,9 +11,11 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:models": "node test/test_models.js",
+    "test:llm": "jiti test/test_llm.ts",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
-    "fmt": "oxfmt"
+    "fmt": "oxfmt",
+    "postinstall": "wxt prepare"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
@@ -21,6 +23,7 @@
     "@vitest/browser-playwright": "^4.1.11",
     "@webext-core/fake-browser": "^2.0.1",
     "dotenv": "^16.4.7",
+    "jiti": "^2.7.0",
     "jsdom": "26.1.0",
     "oxfmt": "^0.64.0",
     "oxlint": "^1.79.0",
@@ -28,5 +31,8 @@
     "typescript": "5.9.3",
     "vitest": "4.1.11",
     "wxt": "0.21.4"
+  },
+  "engines": {
+    "node": ">=22.18.0"
   }
 }
