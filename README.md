@@ -26,11 +26,15 @@ Webページの文章を**文単位で英日(任意の2言語)ミックス表示
 ## 開発
 
 ```bash
-npm install
-npm run build   # terser で dist/ と mazelingo.zip を生成
+npm install       # postinstallでwxt prepare(.wxt/の型生成)も走る。Node 22.18以上
+npm run dev       # WXT開発サーバー → .output/chrome-mv3-devを「パッケージ化されていない拡張機能」として読み込む
+npm run build     # wxt build → .output/chrome-mv3/
+npm run zip       # .output/mazelingo-<version>-chrome.zip(Chrome Web Store提出用)
+npm test          # vitest(純ロジック + jsdom)
+npm run test:e2e  # playwright(ビルド済み拡張を実ブラウザで)
 ```
 
-Vanilla JS(ESM)・フレームワーク不使用。構成は `CLAUDE.md` を参照。`test/` にモデル疎通スクリプトがあります(`.env.example` をコピーして `.env` にキーを置く)。
+TypeScript(strict)、ビルドはWXT。構成は`CLAUDE.md`を参照。`test/`にモデル疎通スクリプトがあります(`.env.example`をコピーして`.env`にキーを置く。`npm run test:llm -- <model> <api-key>`は本体のLLM層を通して1回翻訳します)。
 
 ## 仕組み(要点)
 

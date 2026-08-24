@@ -1,261 +1,271 @@
 /**
- * Model verification script
- * Sends a minimal request to each model ID listed below and prints whether
- * the provider accepts it. Use it when adding or removing models from
- * LLM_REGISTRY / the side panel. Model IDs come from each provider's
- * /models endpoint.
- *
- * Usage: node test/test_models.js
- * Requires: .env file with API keys (see .env.example)
+ * Model verification script: sends a minimal request to each model to verify
+ * the model ID is valid. Model list sourced from each provider's /models API.
+ * Usage: node test/test_models.js (requires .env API keys, see .env.example)
  */
-
-import "dotenv/config";
-
-// ---- Model definitions ----
-
-const MODELS = {
-  glm: {
-    baseUrl: "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-    format: "openai",
-    apiKeyEnv: "GLM_API_KEY",
-    models: [
-      "glm-4.5",
-      "glm-4.5-air",
-      "glm-4.6",
-      "glm-4.7",
-      "glm-5",
-      "glm-5-turbo",
-    ],
-  },
-  gpt: {
-    baseUrl: "https://api.openai.com/v1/chat/completions",
-    format: "openai",
-    apiKeyEnv: "GPT_API_KEY",
-    models: [
-      "gpt-4o",
-      "gpt-4o-mini",
-      "gpt-4.1",
-      "gpt-4.1-mini",
-      "gpt-4.1-nano",
-      "gpt-5",
-      "gpt-5-mini",
-      "gpt-5-nano",
-      "gpt-5-pro",
-      "gpt-5.1",
-      "gpt-5.2",
-      "gpt-5.2-pro",
-      "gpt-5.4",
-      "gpt-5.4-mini",
-      "gpt-5.4-nano",
-      "gpt-5.4-pro",
-      "o1",
-      "o1-pro",
-      "o3",
-      "o3-mini",
-      "o4-mini",
-    ],
-  },
-  claude: {
-    baseUrl: "https://api.anthropic.com/v1/messages",
-    format: "anthropic",
-    apiKeyEnv: "CLAUDE_API_KEY",
-    models: [
-      "claude-sonnet-4-6",
-      "claude-sonnet-4-5-20250929",
-      "claude-sonnet-4-20250514",
-      "claude-opus-4-6",
-      "claude-opus-4-5-20251101",
-      "claude-opus-4-1-20250805",
-      "claude-opus-4-20250514",
-      "claude-haiku-4-5-20251001",
-      "claude-3-haiku-20240307",
-    ],
-  },
-  gemini: {
-    baseUrl: "https://generativelanguage.googleapis.com/v1beta",
-    format: "google",
-    apiKeyEnv: "GEMINI_API_KEY",
-    models: [
-      "gemini-2.0-flash",
-      "gemini-2.5-flash",
-      "gemini-2.5-flash-lite",
-      "gemini-2.5-pro",
-      "gemini-3-flash-preview",
-      "gemini-3.1-flash-lite-preview",
-      "gemini-3.1-pro-preview",
-    ],
-  },
-};
-
-// ---- Request builders ----
+/**
+ * @param {unknown} proc
+ * @param {string} key
+ * @returns {string | undefined}
+ */
+function getEnv(proc, key) {
+  let found;
+  if (
+    typeof proc === "object" &&
+    proc !== null &&
+    "env" in proc &&
+    typeof proc.env === "object" &&
+    proc.env !== null
+  ) {
+    for (const [k, v] of Object.entries(proc.env)) {
+      if (k === key && typeof v === "string") {
+        found = v;
+        break;
+      }
+    }
+  }
+  return found;
+}
+/**
+ * @param {unknown} proc
+ */
+function loadEnvFile(proc) {
+  if (typeof proc === "object" && proc !== null && "loadEnvFile" in proc) {
+    /** @type {() => void} */
+    const fn = proc.loadEnvFile;
+    fn();
+  }
+}
+/**
+ * @param {unknown} proc
+ * @param {number} code
+ */
+function setExitCode(proc, code) {
+  if (typeof proc === "object" && proc !== null && "exitCode" in proc) {
+    proc.exitCode = code;
+  }
+}
+try {
+  loadEnvFile(process);
+} catch {
+  // .env not present; API keys may be unset
+}
+/**
+ * @typedef {{
+ *   readonly elapsed?: number, readonly error?: string, readonly httpStatus?: number,
+ *   readonly model: string, readonly provider: string,
+ *   readonly status: "ERROR" | "FAIL" | "OK" | "SKIP",
+ * }} Result
+ */
+import { MODELS } from "./model-catalog.js";
 
 const TEST_MESSAGE = "Say OK";
-
+/**
+ * @param {string} model
+ * @param {string} apiKey
+ * @param {string} baseUrl
+ */
 function buildOpenAIRequest(model, apiKey, baseUrl) {
   const useNewParam = model.startsWith("o") || model.startsWith("gpt-5");
   const body = {
-    model,
     messages: [{ role: "user", content: TEST_MESSAGE }],
+    model,
     ...(useNewParam ? { max_completion_tokens: 50 } : { max_tokens: 5 }),
   };
   return {
-    url: baseUrl,
     options: {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify(body),
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      method: "POST",
     },
+    url: baseUrl,
   };
 }
-
+/**
+ * @param {string} model
+ * @param {string} apiKey
+ * @param {string} baseUrl
+ */
 function buildAnthropicRequest(model, apiKey, baseUrl) {
   return {
-    url: baseUrl,
     options: {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify({
         model,
         max_tokens: 5,
         messages: [{ role: "user", content: TEST_MESSAGE }],
       }),
+      headers: {
+        "Content-Type": "application/json",
+        "anthropic-version": "2023-06-01",
+        "x-api-key": apiKey,
+      },
+      method: "POST",
     },
+    url: baseUrl,
   };
 }
-
+/**
+ * @param {string} model
+ * @param {string} apiKey
+ * @param {string} baseUrl
+ */
 function buildGoogleRequest(model, apiKey, baseUrl) {
   return {
-    url: `${baseUrl}/models/${model}:generateContent?key=${apiKey}`,
     options: {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: TEST_MESSAGE }] }],
         generationConfig: { maxOutputTokens: 5 },
       }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
     },
+    url: `${baseUrl}/models/${model}:generateContent?key=${apiKey}`,
   };
 }
-
+/** @type {Record<string, (model: string, apiKey: string, baseUrl: string) => { options: object, url: string }>} */
 const FORMAT_BUILDERS = {
-  openai: buildOpenAIRequest,
   anthropic: buildAnthropicRequest,
   google: buildGoogleRequest,
+  openai: buildOpenAIRequest,
 };
-
-// ---- Test runner ----
-
+/**
+ * @param {unknown} parsed
+ * @param {string} text
+ * @returns {string}
+ */
+function formatErrorDetail(parsed, text) {
+  if (typeof parsed === "object" && parsed !== null && "error" in parsed) {
+    const error = parsed.error;
+    if (typeof error === "object" && error !== null) {
+      const message = "message" in error ? error.message : undefined;
+      if (typeof message === "string") {
+        return message;
+      }
+      const type = "type" in error ? error.type : undefined;
+      if (typeof type === "string") {
+        return type;
+      }
+    }
+  }
+  return text.slice(0, 120);
+}
+/**
+ * @param {string} provider
+ * @param {string} model
+ * @param {string} apiKey
+ * @param {string} baseUrl
+ * @param {string} format
+ * @returns {Promise<Result>}
+ */
 async function testModel(provider, model, apiKey, baseUrl, format) {
   const builder = FORMAT_BUILDERS[format];
-  const { url, options } = builder(model, apiKey, baseUrl);
-
+  const { options, url } = builder(model, apiKey, baseUrl);
   const start = performance.now();
   const response = await fetch(url, options);
   const elapsed = Math.round(performance.now() - start);
-
   if (response.ok) {
-    return { model, status: "OK", httpStatus: response.status, elapsed };
+    return { elapsed, httpStatus: response.status, model, provider, status: "OK" };
   }
-
-  let errorDetail = "";
+  let errorDetail = `HTTP ${response.status}`;
   try {
     const text = await response.text();
-    const json = JSON.parse(text);
-    errorDetail =
-      json.error?.message || json.error?.type || text.slice(0, 120);
+    /** @type {unknown} */
+    const parsed = JSON.parse(text);
+    errorDetail = formatErrorDetail(parsed, text);
   } catch {
-    errorDetail = `HTTP ${response.status}`;
+    // keep the HTTP status as the error detail
   }
   return {
-    model,
-    status: "FAIL",
-    httpStatus: response.status,
     elapsed,
     error: errorDetail,
+    httpStatus: response.status,
+    model,
+    provider,
+    status: "FAIL",
   };
 }
-
-async function main() {
-  console.log("=== Mazelingo Model Verification ===\n");
-
-  const results = [];
-
-  for (const [providerName, provider] of Object.entries(MODELS)) {
-    const apiKey = process.env[provider.apiKeyEnv];
-    if (!apiKey || apiKey.startsWith("your_")) {
-      console.log(
-        `[${providerName}] SKIP — ${provider.apiKeyEnv} not set\n`,
-      );
-      for (const model of provider.models) {
-        results.push({ model, status: "SKIP", provider: providerName });
-      }
-      continue;
-    }
-
-    console.log(`[${providerName}] Testing ${provider.models.length} models...`);
-
-    for (const model of provider.models) {
-      try {
-        const result = await testModel(
-          providerName,
-          model,
-          apiKey,
-          provider.baseUrl,
-          provider.format,
-        );
-        result.provider = providerName;
-        results.push(result);
-
-        const icon = result.status === "OK" ? "✓" : "✗";
-        const detail =
-          result.status === "OK"
-            ? `${result.elapsed}ms`
-            : `${result.error} (${result.elapsed}ms)`;
-        console.log(`  ${icon} ${model} — ${detail}`);
-      } catch (err) {
-        results.push({
-          model,
-          status: "ERROR",
-          provider: providerName,
-          error: err.message,
-        });
-        console.log(`  ✗ ${model} — ${err.message}`);
-      }
-    }
-    console.log();
-  }
-
-  // ---- Summary ----
+/**
+ * @param {string} providerName
+ * @param {ReadonlyArray<string>} models
+ * @param {string} apiKey
+ * @param {string} baseUrl
+ * @param {string} format
+ * @returns {Promise<Result[]>}
+ */
+function runProvider(providerName, models, apiKey, baseUrl, format) {
+  return Promise.all(
+    models.map((model) =>
+      testModel(providerName, model, apiKey, baseUrl, format).catch((err) => {
+        const message = err instanceof Error ? err.message : String(err);
+        console.log(`  ✗ ${model} — ${message}`);
+        return { model, provider: providerName, status: "ERROR", error: message };
+      }),
+    ),
+  );
+}
+/**
+ * @param {ReadonlyArray<Result>} results
+ * @returns {number}
+ */
+function failCount(results) {
+  return results.filter((r) => r.status === "FAIL" || r.status === "ERROR").length;
+}
+/**
+ * @param {ReadonlyArray<Result>} results
+ */
+function printSummary(results) {
   console.log("=== Summary ===");
-  const ok = results.filter((r) => r.status === "OK");
   const fail = results.filter((r) => r.status === "FAIL" || r.status === "ERROR");
+  const ok = results.filter((r) => r.status === "OK");
   const skip = results.filter((r) => r.status === "SKIP");
-
   console.log(`  OK: ${ok.length}  FAIL: ${fail.length}  SKIP: ${skip.length}`);
-
   if (fail.length > 0) {
     console.log("\nFailed models:");
     for (const r of fail) {
       console.log(`  ✗ ${r.model} (${r.provider}) — ${r.error}`);
     }
   }
-
   if (ok.length > 0) {
     console.log("\nValid models for MODEL_OPTIONS:");
     for (const r of ok) {
       console.log(`  "${r.model}"`);
     }
   }
-
-  // Exit with error if any failed
-  process.exit(fail.length > 0 ? 1 : 0);
 }
-
-main();
+/**
+ * @returns {Promise<void>}
+ */
+async function main() {
+  console.log("=== Mazelingo Model Verification ===\n");
+  /** @type {Result[]} */
+  const results = [];
+  /** @type {Promise<Result[]>[]} */
+  const pending = [];
+  for (const [providerName, provider] of Object.entries(MODELS)) {
+    const apiKey = getEnv(process, provider.apiKeyEnv) ?? "";
+    if (apiKey === "" || apiKey.startsWith("your_")) {
+      console.log(`[${providerName}] SKIP — ${provider.apiKeyEnv} not set\n`);
+      for (const model of provider.models) {
+        results.push({ model, provider: providerName, status: "SKIP" });
+      }
+      continue;
+    }
+    console.log(`[${providerName}] Testing ${provider.models.length} models...`);
+    pending.push(
+      runProvider(providerName, provider.models, apiKey, provider.baseUrl, provider.format),
+    );
+  }
+  const settled = await Promise.all(pending);
+  for (const rows of settled) {
+    for (const r of rows) {
+      const icon = r.status === "OK" ? "✓" : "✗";
+      const detail = r.status === "OK" ? `${r.elapsed}ms` : `${r.error} (${r.elapsed}ms)`;
+      console.log(`  ${icon} ${r.model} — ${detail}`);
+      results.push(r);
+    }
+    console.log();
+  }
+  printSummary(results);
+  setExitCode(process, failCount(results) > 0 ? 1 : 0);
+}
+await main();

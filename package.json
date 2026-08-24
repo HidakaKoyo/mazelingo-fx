@@ -1,12 +1,38 @@
 {
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node build.js",
-    "test:models": "node test/test_models.js"
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "compile": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:models": "node test/test_models.js",
+    "test:llm": "jiti test/test_llm.ts",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "fmt": "oxfmt",
+    "postinstall": "wxt prepare"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^22.20.1",
+    "@vitest/browser-playwright": "^4.1.11",
+    "@webext-core/fake-browser": "^2.0.1",
     "dotenv": "^16.4.7",
-    "terser": "^5.46.1"
+    "jiti": "^2.7.0",
+    "jsdom": "26.1.0",
+    "oxfmt": "^0.64.0",
+    "oxlint": "^1.79.0",
+    "oxlint-tsgolint": "^7.0.2001",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11",
+    "wxt": "0.21.4"
+  },
+  "engines": {
+    "node": ">=22.18.0"
   }
 }
