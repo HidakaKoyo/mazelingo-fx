@@ -1,6 +1,6 @@
 /**
  * Typed message protocol shared across the three extension contexts:
- * background, content script, and the side panel / options pages.
+ * background, content script, and the side panel.
  *
  * Every `mlg:*` message (previously a stringly-typed convention scattered
  * across files) is now a discriminated union. `MlgMessage` is the payload
