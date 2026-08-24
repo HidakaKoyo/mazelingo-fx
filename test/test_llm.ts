@@ -10,16 +10,16 @@ import { LLM_REGISTRY, callLLMChain } from "../utils/llm";
 const model = process.argv[2];
 const apiKey = process.argv[3];
 
-if (!model || !apiKey) {
+if (model === undefined || apiKey === undefined) {
   console.error("Usage: npm run test:llm -- <model-name> <api-key>");
   console.error("Known prefixes:", Object.keys(LLM_REGISTRY).join(", "));
   process.exit(1);
 }
 
 const prefix = Object.keys(LLM_REGISTRY)
-  .sort((a, b) => b.length - a.length)
+  .toSorted((a, b) => b.length - a.length)
   .find((p) => model.startsWith(p));
-if (!prefix) {
+if (prefix === undefined) {
   console.error("No provider matches model:", model);
   console.error("Known prefixes:", Object.keys(LLM_REGISTRY).join(", "));
   process.exit(1);

@@ -248,14 +248,10 @@ export function isPageAllowed(
   return !exclude.some((matcher) => matcher.regex.test(href));
 }
 
-// Bit-identical to the JS original; the hash seeds the per-page language
-// assignment, so changing it would re-mix every page users have already seen.
 export function hashString(input: string): number {
   let hash = 0;
   for (let index = 0; index < input.length; index += 1) {
-    // oxlint-disable-next-line unicorn/prefer-code-point
-    hash = (hash << 5) - hash + input.charCodeAt(index);
-    hash |= 0;
+    hash = ((hash << 5) - hash + input.charCodeAt(index)) | 0; // oxlint-disable-line unicorn/prefer-code-point, unicorn/prefer-math-trunc
   }
   return Math.abs(hash);
 }

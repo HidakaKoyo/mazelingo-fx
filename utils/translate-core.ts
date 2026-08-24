@@ -49,7 +49,7 @@ export function namesFor(from: string, to: string): LangPair {
   return { fromName: LANG_NAMES[from] ?? from, toName: LANG_NAMES[to] ?? to };
 }
 async function resplitLongUnit(
-  unit: TranslationUnit,
+  unit: Readonly<TranslationUnit>,
   fromName: string,
   toName: string,
   deps: Readonly<TranslateDeps>,
