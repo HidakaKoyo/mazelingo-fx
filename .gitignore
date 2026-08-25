@@ -8,3 +8,14 @@ mazelingo.zip
 test-results/
 playwright-report/
 pnpm-lock.yaml
+
+# `npm run build:local` mirrors .output/chrome-mv3 here so the unpacked extension
+# keeps the id (and chrome.storage) it had before the WXT migration
+/manifest.json
+/background.js
+/sidepanel.html
+/chunks/
+/content-scripts/
+/icons/
+/vocab_data.json
+/situations.json

@@ -29,6 +29,7 @@ Webページの文章を**文単位で英日(任意の2言語)ミックス表示
 npm install       # postinstallでwxt prepare(.wxt/の型生成)も走る。Node 22.18以上
 npm run dev       # WXT開発サーバー → .output/chrome-mv3-devを「パッケージ化されていない拡張機能」として読み込む
 npm run build     # wxt build → .output/chrome-mv3/
+npm run build:local  # 同上 + 成果物をリポジトリ直下へミラー(既存の未パッケージ拡張をそのまま再読み込みできる)
 npm run zip       # .output/mazelingo-<version>-chrome.zip(Chrome Web Store提出用)
 npm test          # vitest(純ロジック + jsdom)
 npm run test:e2e  # playwright(ビルド済み拡張を実ブラウザで)

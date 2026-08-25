@@ -10,6 +10,7 @@ Chrome Web Store: https://chromewebstore.google.com/detail/mazelingo/bhdngeocoko
 npm install        # 依存: wxt, typescript, vitest, playwright (devDependencies)
 npm run dev        # wxt (HMR付き開発サーバー)
 npm run build      # wxt build → .output/chrome-mv3/ 生成
+npm run build:local # 同上 + 直下へミラー。chrome://extensions で直下を読み込んでいる既存項目の「再読み込み」で反映(拡張IDと chrome.storage を維持)
 npm run zip        # wxt zip → mazelingo.zip (Chrome Web Store配布用)
 npm run compile    # tsc --noEmit (型チェック)
 npm test           # vitest (ユニット/純ロジック + jsdom DOMテスト)
