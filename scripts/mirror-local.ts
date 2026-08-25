@@ -8,14 +8,16 @@
 import { cpSync, existsSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
-const src = join(process.cwd(), ".output", "chrome-mv3");
+const root = process.cwd();
+const src = join(root, ".output", "chrome-mv3");
 if (!existsSync(join(src, "manifest.json"))) {
   console.error("No build found at .output/chrome-mv3 — run `wxt build` first.");
   process.exit(1);
 }
-for (const name of readdirSync(src)) {
-  const dest = join(process.cwd(), name);
-  rmSync(dest, { recursive: true, force: true });
+const entries = readdirSync(src);
+for (const name of entries) {
+  const dest = join(root, name);
+  rmSync(dest, { force: true, recursive: true });
   cpSync(join(src, name), dest, { recursive: true });
 }
-console.log(`Mirrored ${readdirSync(src).length} entries from .output/chrome-mv3 to the repo root.`);
+console.log(`Mirrored ${entries.length} entries from .output/chrome-mv3 to the repo root.`);

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "wxt",
     "build": "wxt build",
-    "build:local": "wxt build && node scripts/mirror-local.mjs",
+    "build:local": "wxt build && jiti scripts/mirror-local.ts",
     "zip": "wxt zip",
     "compile": "tsc --noEmit",
     "test": "vitest run",
