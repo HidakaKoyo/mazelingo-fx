@@ -49,31 +49,37 @@ export function namesFor(from: string, to: string): LangPair {
   return { fromName: LANG_NAMES[from] ?? from, toName: LANG_NAMES[to] ?? to };
 }
 async function resplitLongUnit(
-  source: string,
+  unit: Readonly<TranslationUnit>,
   fromName: string,
   toName: string,
   deps: Readonly<TranslateDeps>,
   config: Readonly<ReadonlyConfig>,
 ): Promise<TranslationBlock["sentences"]> {
-  const messages = buildResplitMessages(source, fromName, toName);
-  const llmResult: unknown = await deps.llm(
-    config.models,
-    messages,
-    config.apiKeys,
-    TRANSLATION_SCHEMA,
-  );
-  const result = isResplitResult(llmResult) ? llmResult : undefined;
-  const sentences = result?.blocks?.[0]?.sentences;
-  const rejoin = sourcesRejoin(sentences, source);
-  if (result?.blocks?.length === 1 && sentences && sentences.length >= 2 && rejoin) {
-    return sentences;
+  try {
+    const messages = buildResplitMessages(unit.source, fromName, toName);
+    const llmResult: unknown = await deps.llm(
+      config.models,
+      messages,
+      config.apiKeys,
+      TRANSLATION_SCHEMA,
+    );
+    const result = isResplitResult(llmResult) ? llmResult : undefined;
+    const sentences = result?.blocks?.[0]?.sentences;
+    const rejoin = sourcesRejoin(sentences, unit.source);
+    if (result?.blocks?.length === 1 && sentences && sentences.length >= 2 && rejoin) {
+      return sentences;
+    }
+    console.warn("[mlg:bg] long-unit re-split rejected; keeping original unit", {
+      blockCount: result?.blocks?.length,
+      sourcesRejoin: rejoin,
+      unitCount: sentences?.length,
+    });
+  } catch (error) {
+    console.warn("[mlg:bg] long-unit re-split failed; keeping original unit", {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
-  console.warn("[mlg:bg] long-unit re-split rejected; keeping original unit", {
-    blockCount: result?.blocks?.length,
-    sourcesRejoin: rejoin,
-    unitCount: sentences?.length,
-  });
-  return [{ source, translation: "" }];
+  return [{ source: unit.source, translation: unit.translation }];
 }
 
 export async function resplitBlock(
@@ -86,7 +92,7 @@ export async function resplitBlock(
   const resolved = await Promise.all(
     block.sentences.map((unit) =>
       isLongTranslationUnit(unit.source)
-        ? resplitLongUnit(unit.source, fromName, toName, deps, config)
+        ? resplitLongUnit(unit, fromName, toName, deps, config)
         : Promise.resolve([unit]),
     ),
   );

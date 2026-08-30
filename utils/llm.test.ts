@@ -102,6 +102,7 @@ function testOpenAIRequest(): void {
     expect(responseFormat?.type).toBe("json_schema");
     const jsonSchema = toRecord(responseFormat?.json_schema);
     expect(jsonSchema?.schema).toEqual(TRANSLATION_SCHEMA);
+    expect(body.provider).toBeUndefined();
   });
 }
 
@@ -116,6 +117,7 @@ function testOpenRouterRequest(): void {
     );
     const body = parseBodyObject(req.options.body);
     expect(body.model).toBe("openai/gpt-4.1-mini");
+    expect(body.provider).toEqual({ require_parameters: true });
     expect(req.options.headers["HTTP-Referer"]).toContain("mazelingo");
     expect(req.options.headers["X-OpenRouter-Title"]).toBe("Mazelingo");
   });

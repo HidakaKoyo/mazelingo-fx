@@ -192,3 +192,37 @@ describe("translateBatch (retries)", () => {
     expect(result.blocks[0]).toBeNull();
   });
 });
+
+describe("translateBatch (long-unit re-splitting)", () => {
+  it("keeps an already translated unit when its best-effort re-split throws", async () => {
+    const source = "a".repeat(141);
+    const translated = "翻訳済みの長文";
+    const { deps, llm } = await setup();
+    llm
+      .mockResolvedValueOnce({
+        blocks: [{ i: 0, sentences: [{ source, translation: translated }] }],
+      })
+      .mockRejectedValueOnce(new Error("re-split unavailable"));
+
+    const result = await translateBatch({ from: "en", htmlBlocks: [source], to: "ja" }, deps);
+
+    expect(result.blocks[0]).toEqual({ sentences: [{ source, translation: translated }] });
+    expect(llm).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps an already translated unit when its re-split result is invalid", async () => {
+    const source = "b".repeat(141);
+    const translated = "既存の翻訳";
+    const { deps, llm } = await setup();
+    llm
+      .mockResolvedValueOnce({
+        blocks: [{ i: 0, sentences: [{ source, translation: translated }] }],
+      })
+      .mockResolvedValueOnce({ blocks: [] });
+
+    const result = await translateBatch({ from: "en", htmlBlocks: [source], to: "ja" }, deps);
+
+    expect(result.blocks[0]).toEqual({ sentences: [{ source, translation: translated }] });
+    expect(llm).toHaveBeenCalledTimes(2);
+  });
+});

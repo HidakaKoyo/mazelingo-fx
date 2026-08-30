@@ -9,6 +9,10 @@ export interface ProviderEntry {
   readonly apiKeyKey?: string;
   readonly stripPrefix?: string;
   readonly headers?: Readonly<Record<string, string>>;
+  /** Provider routing options applied only when requesting structured output. */
+  readonly structuredOutputRouting?: Readonly<{
+    readonly requireParameters?: boolean;
+  }>;
 }
 
 export const LLM_REGISTRY: Record<string, ProviderEntry> = {
@@ -47,6 +51,9 @@ export const LLM_REGISTRY: Record<string, ProviderEntry> = {
       "X-OpenRouter-Title": "Mazelingo",
     },
     stripPrefix: "openrouter/",
+    structuredOutputRouting: {
+      requireParameters: true,
+    },
   },
 };
 

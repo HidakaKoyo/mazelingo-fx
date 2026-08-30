@@ -17,6 +17,7 @@ interface FormatHandler {
     baseUrl: string,
     schema: unknown,
     extraHeaders?: Readonly<Record<string, string>>,
+    structuredOutputRouting?: ProviderEntry["structuredOutputRouting"],
   ) => LLMRequest;
   parse: (data: unknown) => unknown;
 }
@@ -98,6 +99,7 @@ function buildOpenAIRequest(
   baseUrl: string,
   schema: unknown,
   extraHeaders: Readonly<Record<string, string>> = {},
+  structuredOutputRouting: ProviderEntry["structuredOutputRouting"],
 ): LLMRequest {
   const body: Record<string, unknown> = { messages, model: modelName };
   if (schema !== undefined) {
@@ -105,6 +107,9 @@ function buildOpenAIRequest(
       json_schema: { name: "response", schema, strict: true },
       type: "json_schema",
     };
+    if (structuredOutputRouting?.requireParameters === true) {
+      body.provider = { require_parameters: true };
+    }
   }
   return {
     options: {
@@ -139,6 +144,8 @@ function buildAnthropicRequest(
   apiKey: string,
   baseUrl: string,
   _schema: unknown,
+  _extraHeaders?: Readonly<Record<string, string>>,
+  _structuredOutputRouting?: ProviderEntry["structuredOutputRouting"],
 ): LLMRequest {
   const systemMsg = messages.find((m: Readonly<ChatMessage>) => m.role === "system");
   const nonSystemMessages = messages.filter((m: Readonly<ChatMessage>) => m.role !== "system");
@@ -190,6 +197,8 @@ function buildGoogleRequest(
   apiKey: string,
   baseUrl: string,
   schema: unknown,
+  _extraHeaders?: Readonly<Record<string, string>>,
+  _structuredOutputRouting?: ProviderEntry["structuredOutputRouting"],
 ): LLMRequest {
   const systemMsg = messages.find((m: Readonly<ChatMessage>) => m.role === "system");
   const nonSystemMessages = messages.filter((m: Readonly<ChatMessage>) => m.role !== "system");
@@ -262,6 +271,7 @@ export function buildLLMRequest(
     provider.entry.baseUrl,
     schema,
     provider.entry.headers,
+    provider.entry.structuredOutputRouting,
   );
 }
 
