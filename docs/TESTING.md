@@ -1,6 +1,8 @@
 # テスト
 
-## 自動確認
+## 自動検査を実行する
+
+次のコマンドで、型、書式、単体テスト、ビルド、manifest、E2Eを検査します。
 
 ```bash
 npm ci
@@ -15,102 +17,110 @@ npm run verify:manifests
 npm run test:e2e
 ```
 
-Playwright E2Eは現状Chromium中心です。Firefox Sidebarのmanual checklistを自動E2Eの代替として「pass」にせず、別の確認結果として記録してください。
+Playwright E2Eは、現在Chromiumを中心に実行します。
+Firefox Sidebarの手動確認は、自動E2Eの代わりに成功したものとして扱わず、別の結果として記録してください。
 
-## 2026-08-23 Firefox smoke結果
+## 2026年8月23日のFirefox簡易確認
 
-- 環境: macOS、Mozilla公式Firefox 154.0、`.output/firefox-mv3`
-- temporary install: `web-ext run`で成功
-- toolbar / Sidebar: ExtensionsメニューのMazelingo-FXを押してSidebarが開き、設定UIが表示された
-- storage: 非機密のダミーAPI keyを保存し、Firefox終了後に同じ開発profileへtemporary add-onを再installして値の復元を確認した
-- 未実施: 実API keyによる翻訳・文法解説・TTS、SPA、window切り替え、署名済みXPIのinstall/update
-- 補足: temporary add-onは再起動時に`web-ext`が再installしたため、署名済み恒久版のlifecycle検証ではない
-- `web-ext lint`: error 0、notice 0。既存UIの`innerHTML`利用に関するwarningは残っており、AMO提出前の個別review対象
+Firefox 154.0とmacOSを使い、`.output/firefox-mv3`を確認しました。
 
-## 生成manifest
+- 一時導入：`web-ext run`で成功
+- ツールバーとSidebar：拡張機能メニューのMazelingo-FXを押すとSidebarが開き、設定UIを表示
+- ローカル保存：機密情報ではないダミーのAPIキーを保存し、Firefox終了後に同じ開発用プロファイルへ一時アドオンを再導入して値の復元を確認
+- 未実施：実際のAPIキーを使う翻訳、文法解説、TTS、SPA、ウィンドウ切り替え、署名済みXPIの導入と更新
+- 補足：再起動時は`web-ext`が一時アドオンを再導入したため、署名済み恒久版のライフサイクルは未検証
+- `web-ext lint`：エラー0件、通知0件、警告18件
 
-- [ ] Firefox manifestに`sidebar_action`があり、Chrome固有permissionがない
-- [ ] Firefox manifestの`strict_min_version`が`140.0`である
-- [ ] Firefox manifestに`side_panel`と`sidePanel`がない
-- [ ] Firefox manifestに`background.scripts`があり、`background.service_worker`がない
-- [ ] Chrome manifestに`side_panel`と`sidePanel`がある
-- [ ] Chrome manifestに`sidebar_action`と`sidebarAction`がない
-- [ ] Chrome manifestに`background.service_worker`がある
-- [ ] background、content script、sidepanel、optionsが両buildに含まれる
-- [ ] host permissionが実装に必要な範囲と一致する
+`web-ext lint`の警告には、既存UIの`innerHTML`利用とAndroidの最小バージョンに関する指摘が含まれます。
+AMOへ提出する前に、各警告を個別に確認する必要があります。
 
-## Firefox manual checklist
+## 生成したmanifestを確認する
 
-実施日、Firefox version、OS、build commit、使用provider、結果を記録します。API key自体は記録しません。
+`npm run verify:manifests`は、次の項目と主要な生成物の存在を自動で検査します。
 
-### Install / lifecycle
+- [x] Firefoxのmanifestに`sidebar_action`があり、Chrome固有の権限がない
+- [x] Firefoxのmanifestにある`strict_min_version`が`140.0`である
+- [x] Firefoxのmanifestに`side_panel`と`sidePanel`がない
+- [x] Firefoxのmanifestに`background.scripts`があり、`background.service_worker`がない
+- [x] Chromeのmanifestに`side_panel`と`sidePanel`がある
+- [x] Chromeのmanifestに`sidebar_action`と`sidebarAction`がない
+- [x] Chromeのmanifestに`background.service_worker`がある
+- [x] バックグラウンド処理とサイドパネルの生成物が両ビルドに含まれる
+- [ ] ホスト権限が実装に必要な範囲と一致する
 
-- [ ] `about:debugging`からtemporary installできる
-- [ ] extension reload後にerrorなく再実行できる
-- [ ] Firefox終了後、temporary installが解除される
-- [ ] 署名済みXPIがある場合、通常版Firefoxへ恒久installできる
-- [ ] 旧buildからupdateした場合、設定とcacheの維持を確認する
+## Firefoxを手動で確認する
+
+確認結果には、実施日、Firefoxのバージョン、OS、ビルドしたコミット、使用したプロバイダー、結果を記録します。
+APIキー自体は記録しません。
+
+### 導入とライフサイクル
+
+- [ ] `about:debugging`から一時的に導入できる
+- [ ] 拡張機能を再読み込みした後、エラーなく実行できる
+- [ ] Firefox終了後、一時的な導入が解除される
+- [ ] 署名済みXPIがある場合、通常版Firefoxへ恒久導入できる
+- [ ] 旧版から更新した場合、設定とキャッシュを維持できる
 
 ### Sidebar
 
-- [ ] toolbar iconでSidebarが開く
-- [ ] Sidebarを閉じ、再度開ける
-- [ ] tab切り替え後も操作できる
-- [ ] window切り替え時にSidebarと対象tabが正しい
-- [ ] extension reload後に開き直せる
-- [ ] browser restart後、署名済み恒久版で開ける
+- [ ] ツールバーのアイコンからSidebarを開ける
+- [ ] Sidebarを閉じた後、再度開ける
+- [ ] タブを切り替えた後も操作できる
+- [ ] ウィンドウ切り替え時にSidebarと対象タブが正しい
+- [ ] 拡張機能の再読み込み後にSidebarを開き直せる
+- [ ] ブラウザの再起動後、署名済み恒久版でSidebarを開ける
 
-### Configuration / storage
+### 設定とローカル保存
 
-- [ ] API keyを保存できる
-- [ ] OpenAI / Anthropic / Gemini / OpenRouter / DeepSeek / GLMを選べる
-- [ ] model、言語、mix比率、対象site設定がpanelを閉じても残る
-- [ ] page reload後も設定が残る
-- [ ] browser restart後も設定が残る（恒久版）
-- [ ] site allowlist / denylistが動く
-- [ ] 翻訳cacheが再訪時に利用され、clearできる
-- [ ] 語彙と保存した利用例が再表示される
+- [ ] APIキーを保存できる
+- [ ] OpenAI、Anthropic、Gemini、OpenRouter、DeepSeek、GLMを選択できる
+- [ ] モデル、言語、混在率、対象サイトの設定がパネルを閉じても残る
+- [ ] ページを再読み込みした後も設定が残る
+- [ ] ブラウザを再起動した後も設定が残る（恒久版）
+- [ ] サイトの許可一覧と除外一覧が機能する
+- [ ] 再訪時に翻訳キャッシュを利用でき、消去もできる
+- [ ] 語彙と保存した利用例を再表示できる
 
-### Translation / page interaction
+### 翻訳とページ操作
 
 - [ ] Webページの文章を抽出できる
-- [ ] 許可したsiteだけで翻訳が動く
-- [ ] 原文 / 翻訳文がmix表示される
-- [ ] clickで原文と訳文を切り替えられる
-- [ ] hoverで対訳を表示できる
+- [ ] 許可したサイトだけで翻訳が動く
+- [ ] 原文と翻訳文を混ぜて表示できる
+- [ ] クリックで原文と翻訳文を切り替えられる
+- [ ] マウスオーバーで対訳を表示できる
 - [ ] 文法解説を表示できる
-- [ ] 語彙を追加・表示できる
+- [ ] 語彙を追加、表示できる
 - [ ] OpenAI TTSを再生できる
-- [ ] reload、通常navigation後に動く
-- [ ] SPA navigation後に新しい本文を処理する
-- [ ] `pushState` / `replaceState` / back / forward後に動く
+- [ ] 再読み込みと通常の画面遷移後に動く
+- [ ] SPAによる画面遷移後に新しい本文を処理する
+- [ ] `pushState`、`replaceState`、戻る、進むの各操作後に動く
 - [ ] 動的に追加された本文を処理する
 
-### Provider / networking
+### プロバイダーと通信
 
 - [ ] OpenAIで翻訳できる
 - [ ] Anthropicで翻訳できる
 - [ ] Geminiで翻訳できる
 - [ ] OpenRouterで翻訳できる
-- [ ] DeepSeek / GLMで翻訳できる（利用対象の場合）
-- [ ] invalid keyのerrorを認識できる
-- [ ] requestが選択providerへ直接送信される
-- [ ] Firefox CSP / CORS / host permission errorがない
-- [ ] console、error、test artifactにAPI keyが出ない
+- [ ] DeepSeekとGLMで翻訳できる（利用する場合）
+- [ ] 無効なAPIキーのエラーを認識できる
+- [ ] 要求を選択したプロバイダーへ直接送信する
+- [ ] FirefoxでCSP、CORS、ホスト権限によるエラーがない
+- [ ] コンソール、エラー、テスト生成物にAPIキーが出ない
 
-## Chrome regression checklist
+## Chromeの回帰を手動で確認する
 
-- [ ] unpacked extensionとしてinstallできる
-- [ ] toolbar iconでSide Panelが開く
+- [ ] 未圧縮の拡張機能として導入できる
+- [ ] ツールバーのアイコンからSide Panelを開ける
 - [ ] 設定を保存できる
-- [ ] 翻訳、mix表示、click、hoverが動く
+- [ ] 翻訳、混在表示、クリック、マウスオーバーが動く
 - [ ] 文法解説、語彙、TTSが動く
-- [ ] reloadとSPA navigation後も動く
-- [ ] browser restart後も設定が残る
+- [ ] 再読み込みとSPAによる画面遷移後も動く
+- [ ] ブラウザを再起動した後も設定が残る
 
-## Test境界
+## テストで証明できる範囲
 
-- build成功はFirefox Sidebarの実操作を証明しない
-- temporary installはbrowser restart後の永続性を検証できない
-- provider mock testは実endpointのCSP、認証、model提供状態を検証しない
-- 実keyで確認できないproviderは未実施のまま記録する
+- ビルドの成功だけでは、Firefox Sidebarを実際に操作できることを証明できない
+- 一時的な導入では、ブラウザ再起動後の永続性を検証できない
+- プロバイダーを模したテストでは、実際のエンドポイントにおけるCSP、認証、モデルの提供状態を検証できない
+- 実際のAPIキーで確認できないプロバイダーは、未実施として記録する

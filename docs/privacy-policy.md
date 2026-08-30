@@ -1,60 +1,77 @@
-# Mazelingo-FX Privacy Policy
+# Mazelingo-FX プライバシーポリシー
 
-**Last updated: August 23, 2026**
+最終更新日：2026年8月23日
 
-## Summary
+## 取り扱うデータの概要
 
-Mazelingo-FX does not operate an analytics service or an application backend. Extension data is stored locally in the browser. When the user invokes an AI-powered feature, the extension sends the data required for that feature directly to the configured third-party provider. Those providers process the transmitted data under their own terms and privacy policies.
+Mazelingo-FXは、利用状況を分析するサービスや、アプリ独自のバックエンドを運営しません。
+拡張機能のデータは、ブラウザ内へ保存します。
+利用者がAIを使う機能を実行した場合、その機能に必要なデータを、設定した外部プロバイダーへ直接送信します。
+外部プロバイダーは、各社の利用規約とプライバシーポリシーに従って送信データを処理します。
 
-## Data Stored in the Browser
+## ブラウザ内へ保存するデータ
 
-Mazelingo-FX uses the WebExtensions `storage.local` API to store:
+Mazelingo-FXは、WebExtensionsの`storage.local` APIへ次のデータを保存します。
 
-- settings, including enabled state, language and mix preferences, selected models, and site include/exclude lists;
-- API keys entered by the user;
-- translation cache entries;
-- vocabulary items and their learning state;
-- pending sentence-explanation data, UI language, and saved examples.
+- 有効状態、言語、混在率、選択したモデル、サイトの許可一覧と除外一覧を含む設定
+- 利用者が入力したAPIキー
+- 翻訳キャッシュ
+- 語彙と学習状態
+- 処理待ちの文法解説、UIの表示言語、保存した利用例
 
-API keys are stored in plaintext in the browser extension's local storage. They are not protected by application-level encryption or a dedicated secret vault. Users should not save keys in a shared or untrusted browser profile.
+APIキーは、ブラウザ拡張のローカルストレージへ平文で保存します。
+アプリによる暗号化や、専用の秘密保管庫による保護は行いません。
+共有端末や信頼できないブラウザプロファイルには、APIキーを保存しないでください。
 
-## Data Sent to Third-Party Providers
+## 外部プロバイダーへ送信するデータ
 
-Requests are sent directly from the extension to the relevant provider; they do not pass through a Mazelingo-FX server.
+要求は拡張機能から対象のプロバイダーへ直接送信し、Mazelingo-FX独自のサーバーは経由しません。
 
-- For translation, sentence explanation, writing feedback, vocabulary analysis, and quiz generation, the extension sends the applicable text or page content and the corresponding API key directly to the selected LLM provider.
-- For text-to-speech, the extension sends the requested text, voice setting, and the user's OpenAI API key directly to OpenAI.
+- 翻訳、文法解説、文章へのフィードバック、語彙分析、クイズ生成では、対象テキストまたはページ内容と対応するAPIキーを、選択したLLMプロバイダーへ送信
+- 音声読み上げでは、対象テキスト、音声設定、利用者のOpenAI APIキーをOpenAIへ送信
 
-Supported LLM endpoints include OpenAI, Anthropic, Google Gemini, OpenRouter, DeepSeek, and Zhipu AI / GLM. The exact recipient depends on the selected model. The extension receives and displays the provider response and may store translation results in the local translation cache.
+対応するLLMの送信先は、OpenAI、Anthropic、Google Gemini、OpenRouter、DeepSeek、Zhipu AIまたはGLMです。
+実際の送信先は、選択したモデルによって決まります。
+拡張機能はプロバイダーの応答を受信して表示し、翻訳結果をブラウザ内の翻訳キャッシュへ保存する場合があります。
 
-Third-party providers may log, retain, or otherwise process requests according to their own policies. Users are responsible for reviewing the terms, privacy policy, and data controls of each provider they configure. Mazelingo-FX does not control provider-side retention or training practices.
+外部プロバイダーは、各社の方針に従って要求を記録、保持、処理する場合があります。
+利用者は、設定するプロバイダーの利用規約、プライバシーポリシー、データ管理機能を確認する必要があります。
+Mazelingo-FXは、プロバイダー側の保持期間や学習への利用を管理できません。
 
-## Analytics and Mazelingo-FX Servers
+## 利用状況の分析と独自サーバー
 
-Mazelingo-FX contains no analytics integration and does not send extension usage, settings, API keys, page text, or generated content to a Mazelingo-FX-owned backend. No account system or remote Mazelingo-FX data store is used.
+Mazelingo-FXには、利用状況を分析する機能がありません。
+利用状況、設定、APIキー、ページ内容、生成内容を、Mazelingo-FXが所有するバックエンドへ送信しません。
+Mazelingo-FX独自のアカウント機能や、遠隔地のデータ保存先も使用しません。
 
-## Data Retention and Deletion
+## データの保持と削除
 
-Locally stored settings, API keys, cache entries, vocabulary, and saved examples remain in the browser profile until the extension or browser removes them, the user clears them through an available control, or the user clears extension data. Translation cache entries are also subject to the extension's cache limits and expiry policy.
+ローカルに保存した設定、APIキー、キャッシュ、語彙、利用例は、拡張機能やブラウザが削除するまでブラウザプロファイルに残ります。
+利用者は、対応する画面やブラウザの機能からデータを消去できます。
+翻訳キャッシュには、拡張機能が定める容量制限と有効期限も適用されます。
 
-Uninstalling the extension normally removes its local extension storage according to the browser's behavior. Data already sent to a third-party provider is governed by that provider's retention policy and cannot be deleted by uninstalling Mazelingo-FX.
+拡張機能を削除した場合、通常はブラウザの挙動に従ってローカルストレージも削除されます。
+外部プロバイダーへ送信済みのデータには、そのプロバイダーの保持方針が適用されます。
+Mazelingo-FXを削除しても、外部プロバイダーにあるデータは削除できません。
 
-## User Controls
+## 利用者が変更できる項目
 
-Users can:
+利用者は、次の操作ができます。
 
-- change stored settings and API keys through the Sidebar / Side Panel or options UI;
-- remove API keys or clear browser extension data;
-- clear the translation cache through the extension UI;
-- control the websites processed by editing the site include and exclude lists; and
-- stop future provider transmissions by disabling the extension, removing API keys, or uninstalling it.
+- Sidebar、Side Panel、設定画面から設定とAPIキーを変更する
+- APIキーまたはブラウザ拡張のデータを削除する
+- 拡張機能の画面から翻訳キャッシュを消去する
+- サイトの許可一覧と除外一覧を編集し、処理対象のWebサイトを制御する
+- 拡張機能の無効化、APIキーの削除、拡張機能の削除によって、以後の外部送信を停止する
 
-The default include list is `https://*`, so all HTTPS sites are enabled unless the user narrows the include list or adds exclusions.
+既定の許可一覧は`https://*`です。
+利用者が許可一覧を狭めるか除外を追加しない限り、すべてのHTTPSサイトが有効です。
 
-## Changes to This Policy
+## 本ポリシーの変更
 
-This policy may be updated when the extension's storage, network behavior, supported providers, or distribution requirements change. The date above identifies the latest revision.
+保存方法、通信方法、対応プロバイダー、配布要件を変更した場合、本ポリシーを更新することがあります。
+冒頭の更新日は、直近の改訂日を示します。
 
-## Contact
+## 問い合わせ先
 
-Questions about this policy may be sent to mazelingo.dev@gmail.com.
+本ポリシーへの問い合わせは、mazelingo.dev@gmail.comへ送信してください。

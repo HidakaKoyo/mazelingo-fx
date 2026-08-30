@@ -1,65 +1,82 @@
 # アーキテクチャ
 
-Mazelingo-FXはWXT + TypeScriptで構成したManifest V3拡張です。FirefoxとChromeで共通の翻訳・表示logicを使い、manifestとpanel APIだけをbrowser境界で切り替えます。
+Mazelingo-FXは、WXTとTypeScriptで構成したManifest V3拡張です。
+FirefoxとChromeで翻訳や表示の処理を共有し、manifestとパネルAPIだけをブラウザ境界で切り替えます。
 
 ```mermaid
 flowchart LR
-  Page["Web page"] <--> Content["Content script\nDOM抽出・mix表示・hover・TTS UI"]
-  Content <--> BG["Background\nRPC・LLM・cache・storage・TTS"]
-  Panel["Shared UI\nFirefox Sidebar / Chrome Side Panel"] <--> BG
-  Options["Options"] <--> Storage["browser.storage.local"]
+  Page["Webページ"] <--> Content["コンテンツスクリプト\nDOM抽出、混在表示、対訳、TTS UI"]
+  Content <--> BG["バックグラウンド処理\nRPC、LLM、キャッシュ、保存、TTS"]
+  Panel["共通UI\nFirefox Sidebar、Chrome Side Panel"] <--> BG
+  Options["設定画面"] <--> Storage["browser.storage.local"]
   BG <--> Storage
-  BG --> Providers["OpenAI / Anthropic / Gemini /\nOpenRouter / DeepSeek / GLM"]
+  BG --> Providers["OpenAI、Anthropic、Gemini、\nOpenRouter、DeepSeek、GLM"]
   BG --> OpenAITTS["OpenAI TTS"]
 ```
 
-## Entrypoints
+## エントリーポイント
 
-| 場所                                                   | 役割                                                                      |
-| ------------------------------------------------------ | ------------------------------------------------------------------------- |
-| `entrypoints/background.ts`、`entrypoints/background/` | 起動、message処理、設定・cache・語彙・TTS、toolbar action                 |
-| `entrypoints/content/`                                 | DOM抽出、navigation監視、翻訳適用、mix表示、hover、click切り替え、TTS操作 |
-| `entrypoints/sidepanel/`                               | Firefox SidebarとChrome Side Panelで共有する操作UI                        |
-| `entrypoints/options/`                                 | model、API key、表示言語などの設定UI                                      |
+WXTは各エントリーポイントを検出し、対象ブラウザ向けのmanifest、バックグラウンド処理、コンテンツスクリプト、HTMLを生成します。
+`public/`にあるアイコンとデータは生成物へコピーされます。
 
-WXTがentrypointを検出し、対象browser用manifest、background、content script、HTMLを生成します。`public/`のiconとdataは生成物へコピーされます。
+| 場所                                                   | 役割                                                                             |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| `entrypoints/background.ts`、`entrypoints/background/` | 起動、メッセージ処理、設定、キャッシュ、語彙、TTS、ツールバー操作                |
+| `entrypoints/content/`                                 | DOM抽出、画面遷移の監視、翻訳適用、混在表示、対訳表示、クリック切り替え、TTS操作 |
+| `entrypoints/sidepanel/`                               | Firefox SidebarとChrome Side Panelで共有する操作UI                               |
+| `entrypoints/options/`                                 | モデル、APIキー、表示言語などの設定UI                                            |
 
-## Background
+## バックグラウンド処理
 
-backgroundは`browser.runtime` messageの窓口です。初回設定、RPC、LLM providerへの直接fetch、OpenAI TTS、翻訳cache、文法解説、語彙、Norma処理を担当します。content scriptへAPI keyを渡さず、外部API通信をbackgroundへ集約します。
+バックグラウンド処理は、`browser.runtime`メッセージの窓口です。
+初回設定、RPC、LLMプロバイダーへの直接通信、OpenAI TTS、翻訳キャッシュ、文法解説、語彙、Norma処理を担当します。
+コンテンツスクリプトへAPIキーを渡さず、外部APIとの通信をバックグラウンド処理へ集約します。
 
-## Content script
+## コンテンツスクリプト
 
-ページ内の末端blockを抽出し、HTML構造を保った翻訳単位をbackgroundへ送ります。結果をDOM overlayとして適用します。通常navigation、reload、MutationObserverによる変化、SPA / History API navigationを考慮します。browser APIに依存しない処理は`utils/content-logic*`、`utils/dom-overlay*`、`utils/translation.ts`などへ分離します。
+コンテンツスクリプトは、ページ内の末端ブロックを抽出し、HTML構造を保った翻訳単位をバックグラウンド処理へ送ります。
+翻訳結果はDOM上へ重ねて表示します。
+通常の画面遷移、再読み込み、`MutationObserver`による変化、SPAとHistory APIによる画面遷移を考慮しています。
+ブラウザAPIに依存しない処理は、`utils/content-logic*`、`utils/dom-overlay*`、`utils/translation.ts`などへ分離します。
 
-## Sidebar / Side Panel
+## SidebarとSide Panel
 
-`entrypoints/sidepanel/`のHTMLとlogicは両browserで共用します。FirefoxではSidebar、ChromeではSide Panelとしてhostされます。toolbar iconから開く操作のみbrowser固有です。
+`entrypoints/sidepanel/`のHTMLと処理は、FirefoxとChromeで共有します。
+FirefoxではSidebar、ChromeではSide Panelとして表示します。
+ツールバーのアイコンから開く操作だけがブラウザ固有です。
 
-## LLM layer
+## LLM処理
 
-- `utils/llm-registry.ts`: model prefix、endpoint、format、keyの対応
-- `utils/llm-providers.ts`: provider別request生成とresponse解析
-- `utils/llm.ts`: provider解決、fetch、fallback
-- `utils/prompts.ts`: 翻訳・解説prompt
-- `utils/schemas.ts`: message payloadのruntime validation
+LLM処理は、モデルの判定、要求の生成、応答の解析、プロンプトを役割ごとに分けています。
 
-## Storage
+- `utils/llm-registry.ts`：モデルの接頭辞、エンドポイント、形式、キーの対応
+- `utils/llm-providers.ts`：プロバイダー別の要求生成と応答解析
+- `utils/llm.ts`：プロバイダーの解決、通信、代替処理
+- `utils/prompts.ts`：翻訳と解説のプロンプト
+- `utils/schemas.ts`：メッセージ内容の実行時検証
 
-`browser.storage.local`を使います。主なkeyは`utils/keys.ts`で一元管理します。
+## ローカル保存
 
-| key                       | 内容                                        |
-| ------------------------- | ------------------------------------------- |
-| `mlg_config`              | API key、model、言語、mix比率、対象siteなど |
-| `mlg_translation_cache`   | 翻訳cache                                   |
-| `mlg_norma_cache`         | Norma処理cache                              |
-| `mlg_vocab`               | 語彙                                        |
-| `mlg_pending_explanation` | panelをまたぐ文法解説状態                   |
-| `mlg_ui_language`         | UI言語                                      |
-| `mlg_my_examples`         | 保存した利用例                              |
+ローカル保存には`browser.storage.local`を使います。
+主なキーは`utils/keys.ts`で一元管理します。
 
-API keyは`mlg_config.apiKeys`に平文保存されます。暗号化や独自backendへの同期はしません。
+| キー                      | 内容                                          |
+| ------------------------- | --------------------------------------------- |
+| `mlg_config`              | APIキー、モデル、言語、混在率、対象サイトなど |
+| `mlg_translation_cache`   | 翻訳キャッシュ                                |
+| `mlg_norma_cache`         | Norma処理のキャッシュ                         |
+| `mlg_vocab`               | 語彙                                          |
+| `mlg_pending_explanation` | パネルをまたいで引き継ぐ文法解説の状態        |
+| `mlg_ui_language`         | UIの表示言語                                  |
+| `mlg_my_examples`         | 保存した利用例                                |
 
-## Browser-specific layer
+APIキーは、`mlg_config.apiKeys`へ平文で保存します。
+アプリによる暗号化や、独自のバックエンドへの同期は行いません。
 
-browser差分は、`wxt.config.ts`のtarget別manifest（Firefoxの`sidebar_action`、Chromeの`side_panel`）と、`utils/browser-actions.ts`のpanel adapter（Firefoxの`sidebarAction`、Chromeの`sidePanel`）です。共通coreへ条件分岐を散在させず、この2か所に閉じ込めます。対応表は[FIREFOX_PORT.md](FIREFOX_PORT.md)を参照してください。
+## ブラウザ固有処理の境界
+
+ブラウザによる差分は、`wxt.config.ts`と`utils/browser-actions.ts`へ集約します。
+`wxt.config.ts`は、Firefoxの`sidebar_action`とChromeの`side_panel`を対象別に生成します。
+`utils/browser-actions.ts`は、Firefoxの`sidebarAction`とChromeの`sidePanel`を呼び分けます。
+共通処理へ条件分岐を散在させず、この二つの場所に差分を閉じ込めます。
+対応関係は[Firefox移植](FIREFOX_PORT.md)を参照してください。

@@ -1,20 +1,25 @@
-# 0003: ブラウザ差分を小さなadapterへ隔離する
+# 0003 ブラウザ差分を小さなアダプターへ隔離する
 
-## Context
+## 背景
 
-翻訳、DOM、storage、cache、UIの大半はFirefoxとChromeで共通だが、panel APIとmanifest keyは互換ではない。共通coreへbrowser判定を散在させると保守範囲が増える。
+翻訳、DOM、ローカル保存、キャッシュ、UIの大半は、FirefoxとChromeで共通です。
+一方で、パネルAPIとmanifestのキーには互換性がありません。
+共通処理へブラウザ判定を散在させると、保守する範囲が増えます。
 
-## Decision
+## 決定
 
-runtime APIは`wxt/browser`へ統一し、panelを開く操作を小さなbrowser adapterへ閉じ込める。manifest差分はWXT configのtarget判定に置く。DOM、LLM、cache、storage schemaにはbrowser固有分岐を持ち込まない。
+実行時のAPIは`wxt/browser`へ統一し、パネルを開く操作を小さなブラウザ用アダプターへ閉じ込めます。
+manifestの差分は、WXTの設定にある対象判定へ置きます。
+DOM、LLM、キャッシュ、保存データのスキーマには、ブラウザ固有の分岐を持ち込みません。
 
-## Reason
+## 理由
 
-差分が存在する境界だけを抽象化すれば、不要なframeworkを作らず共通coreをtestでき、API変更時の修正箇所も限定できる。
+差分が存在する境界だけを抽象化すれば、不要な仕組みを増やさずに共通処理をテストできます。
+ブラウザAPIを変更するときの修正箇所も限定できます。
 
-## Consequences
+## 影響
 
-- 新しいbrowser固有APIはadapterへ収められるか先に検討する
-- target判定をmanifest生成とadapter選択以外へ広げない
-- adapter unit test、生成manifest、実browserをそれぞれ確認する
-- UX差は無理に同一化せずFIREFOX_PORT.mdへ記録する
+- 新しいブラウザ固有APIは、既存のアダプターへ収められるかを先に検討する
+- 対象判定は、manifestの生成とアダプターの選択以外へ広げない
+- アダプターの単体テスト、生成したmanifest、実際のブラウザをそれぞれ確認する
+- UXの差は無理に同一化せず、`FIREFOX_PORT.md`へ記録する

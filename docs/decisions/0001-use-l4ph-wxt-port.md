@@ -1,20 +1,23 @@
-# 0001: L4PhのWXT移行を技術的なベースに使う
+# 0001 L4Ph版のWXT移行を技術的な基盤にする
 
-## Context
+## 背景
 
-Yeq6X/mazelingoは正式upstreamだが、Firefoxを継続保守するにはbrowser別build、TypeScript、test可能なmodule分割が必要だった。L4Phの`feature/wxt-typescript-migration`は同じupstream履歴上でTypeScript + WXT、entrypoint再構成、Vitest / Playwright、lint、CIを実装していた。
+Yeq6X/mazelingoは正式なupstreamですが、Firefox版を継続して保守するには、ブラウザ別のビルド、TypeScript、テスト可能なモジュール分割が必要でした。
+L4Phの`feature/wxt-typescript-migration`は、同じupstream履歴上でTypeScriptとWXTへの移行、エントリーポイントの再構成、Vitest、Playwright、lint、CIを実装していました。
 
-## Decision
+## 決定
 
-Yeq6X upstreamの`6b91045`から作業branchを作り、L4Phのcommit `ddd6342`をfast-forwardする。official upstreamはYeq6X、L4Phは別remoteとして保持する。
+Yeq6X upstreamの`6b91045`から作業ブランチを作り、L4Phのコミット`ddd6342`をfast-forwardで取り込みます。
+正式なupstreamはYeq6X版とし、L4Ph版は別のリモートとして保持します。
 
-## Reason
+## 理由
 
-共通祖先上のcommitとして取り込めるため、file copyより由来を追跡しやすい。WXTのmulti-browser buildとtestをFirefox移植へ再利用できる。
+共通祖先上のコミットとして取り込めるため、ファイルを複製するより実装の由来を追跡しやすくなります。
+WXTによる複数ブラウザ向けのビルドとテストを、Firefox移植へ再利用できます。
 
-## Consequences
+## 影響
 
-- L4Ph由来をREADME、UPSTREAM.md、Git履歴に残す
-- Yeq6Xの変更は現在のTypeScript構成へ判断して移植する
-- L4Phの将来変更は自動upstream扱いせず差分ごとに採否を決める
-- WXT移行由来の不具合もMazelingo-FXで保守する
+- L4Ph版に由来することをREADME、`UPSTREAM.md`、Git履歴へ残す
+- Yeq6X版の変更は、現在のTypeScript構成へ内容を確認しながら移植する
+- L4Ph版の将来の変更はupstreamとして自動追従せず、差分ごとに採用を決める
+- WXT移行に由来する不具合もMazelingo-FXで保守する

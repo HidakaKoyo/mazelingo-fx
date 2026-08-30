@@ -1,20 +1,26 @@
-# 0002: FirefoxではSidebar APIを使う
+# 0002 FirefoxではSidebar APIを使う
 
-## Context
+## 背景
 
-操作UIはChrome Side Panelを前提としていた。Firefoxへ`side_panel` / `sidePanel`を出力できず、FirefoxにはSidebar APIがある。UI本体はbrowser非依存である。
+操作UIは、Chrome Side Panelを前提としていました。
+Firefoxの生成物には`side_panel`と`sidePanel`を出力できませんが、FirefoxにはSidebar APIがあります。
+UI本体はブラウザに依存しません。
 
-## Decision
+## 決定
 
-Firefox manifestには`sidebar_action`を生成し、toolbar actionから`browser.sidebarAction.open()`で共通UIを開く。Chromeは`side_panel`と`browser.sidePanel.open({ tabId })`を維持する。
+Firefoxのmanifestには`sidebar_action`を生成します。
+ツールバーの操作から`browser.sidebarAction.open()`を呼び、共通UIを開きます。
+Chromeでは、`side_panel`と`browser.sidePanel.open({ tabId })`を維持します。
 
-## Reason
+## 理由
 
-各browserの標準UIとAPIを使いながら`entrypoints/sidepanel/`を共有し、FirefoxへChrome固有permissionを出さずに済む。
+各ブラウザの標準UIとAPIを使いながら、`entrypoints/sidepanel/`を共有できます。
+Firefoxの生成物へChrome固有の権限を含める必要もありません。
 
-## Consequences
+## 影響
 
-- Firefox Sidebarはwindow側、Chrome Side Panelはtab指定というlifecycle差が残る
-- manifestとopen APIをtargetごとに検証する
-- Firefox通常版への恒久installにはMozilla署名済みXPIが必要
-- window / tab切り替え、reload、restartをmanual testする
+- Firefox Sidebarはウィンドウ側、Chrome Side Panelはタブ指定というライフサイクルの差が残る
+- Firefoxでは利用者の操作から直接Sidebarを開き、ページ内の文法解説要求からは自動で開かない
+- manifestとパネルを開くAPIを対象ごとに検証する
+- 通常版Firefoxへの恒久導入には、Mozillaが署名したXPIが必要になる
+- ウィンドウとタブの切り替え、再読み込み、再起動を手動で確認する
