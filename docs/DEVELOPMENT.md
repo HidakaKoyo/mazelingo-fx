@@ -23,6 +23,7 @@ npm ci
 
 ```bash
 npm run dev:firefox
+npm run dev:firefox:lab
 npm run build:firefox
 ```
 
@@ -30,6 +31,20 @@ npm run build:firefox
 Firefoxが自動で起動しない環境では、`about:debugging#/runtime/this-firefox`を開きます。
 「一時的なアドオンを読み込む」から、生成した`manifest.json`を選択してください。
 通常版Firefoxへの恒久配布には、Mozillaが署名したXPIが必要です。
+
+## Firefox Labで開発とdogfoodingを行う
+
+`Mazelingo-FX Lab`は、実際の閲覧ページで翻訳・文法解説を試すための、同期しない`web-ext`専用Firefoxプロファイルです。Firefoxのプロファイル選択画面に作成・表示するものではありません。Lab起動時に`~/.mazelingo-fx/firefox-lab`を自動作成し、通常利用のFirefoxプロファイルやMCP Test用プロファイルを選択、複製、同期しません。
+
+```bash
+npm run dev:firefox:lab
+```
+
+この入口だけがWXTの`webExt.firefoxProfile`と`keepProfileChanges`を有効にします。そのため、Labに保存したMazelingoの設定とキャッシュは次回のLab起動にも残ります。通常の`npm run dev:firefox`は従来どおり一時プロファイルで起動します。
+
+LabではWXTが開発版を一時アドオンとして導入します。Firefoxまたは開発プロセスを終了した後に再開するときは、もう一度`npm run dev:firefox:lab`を実行して一時アドオンを再導入します。Labには実際に閲覧するページを開いてよい一方、翻訳や文法解説を実行した本文は選択したプロバイダーへ送信されます。APIキーや閲覧内容をIssue、コンソール、ログへ記録しません。
+
+MCP TestはLabとは別のクリーンな専用プロファイルで起動します。Labを`firefox-devtools-mcp`へ接続したり、MCP Testの設定やキャッシュをLabへ持ち込んだりしません。MCP Testは自動確認、Labは実利用のdogfoodingという役割を保ちます。
 
 ## Chrome向けに実行、ビルドする
 

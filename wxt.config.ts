@@ -1,4 +1,14 @@
+import { mkdirSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { defineConfig } from "wxt";
+
+const isFirefoxLab = process.env.MAZELINGO_FIREFOX_LAB === "1";
+const firefoxLabProfile = join(homedir(), ".mazelingo-fx", "firefox-lab");
+
+if (isFirefoxLab) {
+  mkdirSync(firefoxLabProfile, { recursive: true });
+}
 
 const ICONS = {
   128: "icons/icon128.png",
@@ -8,6 +18,12 @@ const ICONS = {
 } as const;
 
 export default defineConfig({
+  webExt: isFirefoxLab
+    ? {
+        firefoxProfile: firefoxLabProfile,
+        keepProfileChanges: true,
+      }
+    : undefined,
   manifest: ({ browser }) => {
     const isFirefox = browser === "firefox";
     return {

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox --mv3",
+    "dev:firefox:lab": "MAZELINGO_FIREFOX_LAB=1 wxt -b firefox --mv3",
     "build": "wxt build",
     "build:chrome": "wxt build -b chrome --mv3",
     "build:firefox": "wxt build -b firefox --mv3",
