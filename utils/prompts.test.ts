@@ -66,11 +66,13 @@ describe("buildVocabAnalysisMessages", () => {
 });
 
 describe("buildExplainMessages", () => {
-  it("serializes the sentence and optional Japanese translation", () => {
+  it("serializes only the sentence, optional Japanese translation, and source language", () => {
     const [, user] = buildExplainMessages({ japaneseText: "やあ", text: "Hello there" });
-    const parsed = expectExplainPayload(JSON.parse(expectMessage(user).content));
+    const content = expectMessage(user).content;
+    const parsed = expectExplainPayload(JSON.parse(content));
     expect(parsed.sentence).toBe("Hello there");
     expect(parsed.japaneseTranslation).toBe("やあ");
+    expect(content).toBe('{"sentence":"Hello there","japaneseTranslation":"やあ"}');
   });
 });
 

@@ -129,7 +129,6 @@ export interface OpenExplanationPayload {
   japaneseText?: string;
   sourceText?: string;
   sourceLang?: string;
-  pageUrl?: string;
   origin?: string;
 }
 
@@ -138,7 +137,6 @@ export interface ExplainSentencePayload {
   englishText?: string;
   japaneseText?: string;
   sourceLang?: string;
-  pageUrl?: string;
 }
 
 export interface FeedbackPayload {

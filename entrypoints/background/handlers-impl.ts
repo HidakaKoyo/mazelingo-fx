@@ -127,7 +127,6 @@ export async function explainSentence(payload: Readonly<ExplainSentencePayload>)
   }
   const messages = buildExplainMessages({
     japaneseText,
-    pageUrl: payload.pageUrl,
     sourceLang: payload.sourceLang,
     text,
   });

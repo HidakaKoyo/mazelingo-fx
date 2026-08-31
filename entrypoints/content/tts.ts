@@ -118,7 +118,6 @@ export function openExplanation(span: MlgSpan): void {
       englishText,
       japaneseText,
       origin: location.origin,
-      pageUrl: location.href,
       sourceLang,
       sourceText,
       text,

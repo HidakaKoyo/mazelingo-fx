@@ -138,7 +138,6 @@ export function buildExplainMessages(payload: {
   readonly text: string;
   readonly japaneseText?: string;
   readonly sourceLang?: string;
-  readonly pageUrl?: string;
 }): ChatMessage[] {
   return [
     {
@@ -166,8 +165,6 @@ Rules:
           payload.sourceLang === undefined || payload.sourceLang === ""
             ? undefined
             : payload.sourceLang,
-        pageUrl:
-          payload.pageUrl === undefined || payload.pageUrl === "" ? undefined : payload.pageUrl,
       }),
       role: "user",
     },
