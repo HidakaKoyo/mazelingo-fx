@@ -2,6 +2,8 @@ import { browser } from "wxt/browser";
 import type {
   ExplanationResult,
   FeedbackResult,
+  ModelCatalogEntry,
+  ModelCatalogResponse,
   OpenExplanationPayload,
   SuggestionItem,
   TtsResponse,
@@ -63,6 +65,25 @@ function isCacheStatsResponse(x: unknown): x is CacheStatsResponse {
 
 function isPendingExplanation(x: unknown): x is OpenExplanationPayload {
   return typeof x === "object" && x !== null && "text" in x;
+}
+
+function isModelCatalogEntry(x: unknown): x is ModelCatalogEntry {
+  if (typeof x !== "object" || x === null || !("id" in x) || !("name" in x)) {
+    return false;
+  }
+  return typeof x.id === "string" && typeof x.name === "string";
+}
+
+function isModelCatalogResponse(x: unknown): x is ModelCatalogResponse {
+  if (typeof x !== "object" || x === null || !("models" in x) || !("status" in x)) {
+    return false;
+  }
+  const status = x.status;
+  if (status !== "ready" && status !== "not-configured" && status !== "failed") {
+    return false;
+  }
+  const models: unknown = x.models;
+  return Array.isArray(models) && models.every((model) => isModelCatalogEntry(model));
 }
 
 export async function generateQuiz(situation: string): Promise<QuizResponse | undefined> {
@@ -146,6 +167,11 @@ export async function getCacheStatsRpc(): Promise<CacheStatsResponse | undefined
 
 export async function clearCacheRpc(): Promise<void> {
   await browser.runtime.sendMessage({ type: "mlg:clearCache" });
+}
+
+export async function refreshModelCatalogRpc(): Promise<ModelCatalogResponse | undefined> {
+  const res: unknown = await browser.runtime.sendMessage({ type: "mlg:refreshModelCatalog" });
+  return isModelCatalogResponse(res) ? res : undefined;
 }
 
 export async function clearPendingExplanation(): Promise<void> {

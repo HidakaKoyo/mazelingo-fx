@@ -195,6 +195,16 @@ export interface ExplainResponse {
   error?: string;
 }
 
+export interface ModelCatalogEntry {
+  id: string;
+  name: string;
+}
+
+export interface ModelCatalogResponse {
+  status: "ready" | "not-configured" | "failed";
+  models: readonly ModelCatalogEntry[];
+}
+
 /**
  * A discriminated union of every message the background service worker
  * accepts. Each variant carries its own payload type.
@@ -202,6 +212,7 @@ export interface ExplainResponse {
 export type MlgMessage =
   | { type: "mlg:readerRun"; payload?: undefined }
   | { type: "mlg:getConfig"; payload?: undefined }
+  | { type: "mlg:refreshModelCatalog"; payload?: undefined }
   | { type: "mlg:setConfig"; payload: SetConfigPayload }
   | { type: "mlg:getCacheStats"; payload?: undefined }
   | { type: "mlg:clearCache"; payload?: undefined }

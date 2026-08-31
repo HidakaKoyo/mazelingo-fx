@@ -330,6 +330,16 @@
       .custom-model-input[hidden] {
         display: none;
       }
+      .model-catalog-actions {
+        margin-top: 10px;
+      }
+      .model-catalog-refresh {
+        width: 100%;
+      }
+      .model-catalog-status {
+        min-height: 16px;
+        margin-top: 6px;
+      }
       .api-key-row {
         margin-bottom: 10px;
       }
@@ -1704,10 +1714,12 @@
               ></textarea>
             </div>
 
+            <div class="section" id="apiKeysSection"></div>
+
             <div class="section">
               <label class="label" id="modelsLabel">モデルチェーン</label>
               <div class="hint" style="margin-bottom: 8px; margin-top: 0" id="modelsHint">
-                優先順にフォールバック（空欄はスキップ）
+                保存済みのOpenRouterキーを使い、構造化翻訳対応の候補だけを表示します
               </div>
               <div class="model-chain">
                 <div class="model-chain-row">
@@ -1732,9 +1744,13 @@
                   </div>
                 </div>
               </div>
+              <div class="model-catalog-actions">
+                <button type="button" class="page-mode-button model-catalog-refresh" id="modelCatalogRefresh">
+                  モデル候補を更新
+                </button>
+                <div class="hint model-catalog-status" id="modelCatalogStatus" aria-live="polite"></div>
+              </div>
             </div>
-
-            <div class="section" id="apiKeysSection"></div>
 
             <div class="section">
               <label class="label" id="ttsVoiceLabel" for="ttsVoice">音声</label>

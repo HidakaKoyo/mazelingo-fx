@@ -7,6 +7,7 @@ import {
   buildVocabAnalysisMessages,
 } from "@/utils/prompts";
 import { callLLMChain } from "@/utils/llm";
+import { discoverOpenRouterModels } from "@/utils/model-catalog";
 import { openExplanationSidePanel } from "@/utils/browser-actions";
 import { translateBatch } from "@/utils/translate";
 import {
@@ -22,6 +23,7 @@ import type {
   ExplainSentencePayload,
   FeedbackPayload,
   GenerateQuizPayload,
+  ModelCatalogResponse,
   NormaDonePayload,
   OpenExplanationPayload,
   OpenOutputPayload,
@@ -70,6 +72,15 @@ export async function clearCache(): Promise<{ ok: true }> {
 export async function clearPendingExplanation(): Promise<{ ok: true }> {
   await explanationStore.clear();
   return { ok: true };
+}
+
+export async function refreshModelCatalog(): Promise<ModelCatalogResponse> {
+  try {
+    const config = await loadConfig();
+    return await discoverOpenRouterModels(config.apiKeys.openrouter ?? "");
+  } catch {
+    return { models: [], status: "failed" };
+  }
 }
 
 export function openOutput(payload: Readonly<OpenOutputPayload>): Promise<{ ok: true }> {

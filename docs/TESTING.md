@@ -73,7 +73,8 @@ APIキー自体は記録しません。
 ### 設定とローカル保存
 
 - [ ] APIキーを保存できる
-- [ ] OpenAI、Anthropic、Gemini、OpenRouter、DeepSeek、GLMを選択できる
+- [ ] 保存済みのOpenRouter APIキーで構造化翻訳対応の候補を取得でき、候補にないモデルは表示しない
+- [ ] OpenAI、Anthropic、Gemini、DeepSeek、GLMの対応モデルIDをカスタム入力できる
 - [ ] モデル、言語、混在率、対象サイトの設定がパネルを閉じても残る
 - [ ] ページを再読み込みした後も設定が残る
 - [ ] ブラウザを再起動した後も設定が残る（恒久版）

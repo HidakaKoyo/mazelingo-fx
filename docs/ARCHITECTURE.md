@@ -50,6 +50,7 @@ LLM処理は、モデルの判定、要求の生成、応答の解析、プロ�
 - `utils/llm-registry.ts`：モデルの接頭辞、エンドポイント、形式、キーの対応
 - `utils/llm-providers.ts`：プロバイダー別の要求生成と応答解析
 - `utils/llm.ts`：プロバイダーの解決、通信、代替処理
+- `utils/model-catalog.ts`：保存済みOpenRouterキーによる構造化翻訳対応モデルの取得と正規化
 - `utils/prompts.ts`：翻訳と解説のプロンプト
 - `utils/schemas.ts`：メッセージ内容の実行時検証
 

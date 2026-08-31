@@ -32,7 +32,7 @@ export const DEFAULT_CONFIG: Config = {
   englishRatio: 30,
   minTextLength: 5,
   mixLanguage: true,
-  models: ["gpt-5.2"],
+  models: [],
   outputRatio: 20,
   pageListExclude: "",
   pageListInclude: "https://*",

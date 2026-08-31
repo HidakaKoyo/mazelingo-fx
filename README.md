@@ -17,7 +17,7 @@ upstreamが公開しているサービス：
 
 - ページ内の文を設定した割合で外国語に置き換え、クリックで原文と訳文を反転
 - マウスオーバーで対訳を表示し、文法解説、語彙管理、音声読み上げ（TTS）を利用
-- OpenAI、Anthropic、Gemini、GLM、DeepSeek、OpenRouterからLLMを選択
+- OpenRouterの保存済みAPIキーに応じたモデル候補と、直接プロバイダー用のカスタムモデルIDを使ってLLMを選択
 - サイトごとの有効化、見えている範囲だけの翻訳、2層キャッシュによるAPI消費の抑制
 - Firefox SidebarとChrome Side Panelで共通の設定・学習UIを利用
 
@@ -54,17 +54,18 @@ upstreamが公開しているサービス：
 SidebarまたはSide Panelで、利用するモデル、APIキー、翻訳対象サイトを設定します。
 Mazelingo-FXの既定の`include`は`https://*`です。必要に応じて`include`と`exclude`の一覧で対象を絞ってください。
 
-| プロバイダー | モデルの例                       | キー                     |
-| ------------ | -------------------------------- | ------------------------ |
-| OpenAI       | `gpt-4.1-mini`                   | OpenAI APIキー           |
-| Anthropic    | `claude-haiku-4-5`               | Anthropic APIキー        |
-| Gemini       | `gemini-2.5-flash`               | Google AI Studio APIキー |
-| OpenRouter   | `openrouter/openai/gpt-4.1-mini` | OpenRouter APIキー       |
-| DeepSeek     | `deepseek-chat`                  | DeepSeek APIキー         |
-| GLM          | `glm-4-*`                        | Zhipu AI APIキー         |
+OpenRouter APIキーを保存すると、パネルを開いた時と「モデル候補を更新」を押した時に`/api/v1/models/user`から候補を取得します。OpenRouterのprovider設定、プライバシー設定、guardrailを反映した一覧のうち、Mazelingoが使うJSON Schema形式の構造化翻訳に対応するテキストモデルだけを表示します。
 
-OpenRouterでは、モデルIDを`openrouter/<vendor>/<model>`形式で指定します。
-一覧にない対応モデルは「カスタム」からIDを入力できますが、現在のプロバイダー判定規則に一致する必要があります。
+| プロバイダー | モデルの指定方法 | キー |
+| --- | --- | --- |
+| OpenRouter | 取得した候補を選択（保存値は`openrouter/<vendor>/<model>`） | OpenRouter APIキー |
+| OpenAI | カスタムに例: `gpt-4.1-mini` | OpenAI APIキー |
+| Anthropic | カスタムに例: `claude-haiku-4-5` | Anthropic APIキー |
+| Gemini | カスタムに例: `gemini-2.5-flash` | Google AI Studio APIキー |
+| DeepSeek | カスタムに例: `deepseek-chat` | DeepSeek APIキー |
+| GLM | カスタムに例: `glm-4-*` | Zhipu AI APIキー |
+
+候補一覧は取得時点のOpenRouter設定を反映しますが、残高、レート制限、障害などによる実行成功までは保証しません。一覧にない対応モデルは「カスタム」からIDを入力できますが、現在のプロバイダー判定規則に一致する必要があります。
 
 うまく動かない場合は、対象ページのDevToolsコンソールで`[mlg:llm]`から始まるエラーを確認してください。
 モデルIDの誤り、APIキーの不一致、提供終了モデルなどを切り分けられます。APIキーや閲覧内容はIssueやログへ貼り付けないでください。
@@ -76,6 +77,7 @@ APIキーは暗号化せず、ブラウザ拡張の`storage.local`へ平文で�
 
 翻訳、文法解説、文章へのフィードバック、語彙分析、クイズ生成では、対象テキストとAPIキーをバックグラウンド処理から選択したプロバイダーへ直接送信します。
 音声読み上げでは、対象テキストとAPIキーをOpenAIへ直接送信します。
+OpenRouterのモデル候補を取得するときは、OpenRouter APIキーだけをOpenRouterへ送信し、閲覧中の本文は送信しません。
 独自の中継サーバーや利用状況の分析機能はありません。各プロバイダーの利用規約とデータ保持方針を確認してください。
 
 ## 開発

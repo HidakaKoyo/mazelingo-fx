@@ -1,9 +1,30 @@
 import { LLM_REGISTRY } from "@/utils/llm";
+import type { ModelCatalogResponse } from "@/utils/messages";
 import type { ModelControl } from "./el";
 import { elements } from "./el";
-import { CUSTOM_MODEL_VALUE, MODEL_OPTIONS, type ModelOption } from "./constants";
-import { getCurrentLanguage, getTranslations } from "./translations";
-import { getProviderPrefix, type DeepReadonly } from "./util";
+import { CUSTOM_MODEL_VALUE } from "./constants";
+import { getTranslations } from "./translations";
+import { getProviderPrefix } from "./util";
+
+type CatalogModel = Readonly<ModelCatalogResponse["models"][number]>;
+type ReadonlyModelCatalogResponse = {
+  readonly models: readonly CatalogModel[];
+  readonly status: ModelCatalogResponse["status"];
+};
+
+type CatalogStatus = "idle" | "loading" | ModelCatalogResponse["status"];
+
+const PROVIDER_NAMES: Readonly<Record<string, string>> = {
+  claude: "Anthropic",
+  deepseek: "DeepSeek",
+  gemini: "Google Gemini",
+  glm: "Z.AI",
+  gpt: "OpenAI",
+  openrouter: "OpenRouter",
+};
+
+let catalogStatus: CatalogStatus = "idle";
+let discoveredModels: readonly CatalogModel[] = [];
 
 export function getModelControls(): ModelControl[] {
   return [
@@ -26,9 +47,7 @@ export function getSelectedModels(): string[] {
 }
 
 function isListedModel(modelName: string): boolean {
-  return MODEL_OPTIONS.some((opt: DeepReadonly<ModelOption>) =>
-    typeof opt === "string" ? opt === modelName : opt.value === modelName,
-  );
+  return discoveredModels.some((model) => model.id === modelName);
 }
 
 export function syncCustomModelControl(control: Readonly<ModelControl>): void {
@@ -54,24 +73,99 @@ export function setModelValues(models: readonly string[]): void {
   });
 }
 
+function appendOption(select: HTMLSelectElement, value: string, label: string): void {
+  const option = document.createElement("option");
+  option.value = value;
+  option.textContent = label;
+  select.append(option);
+}
+
+function modelLabel(model: Readonly<CatalogModel>): string {
+  const providerModelId = model.id.replace(/^openrouter\//u, "");
+  return `${model.name} — ${providerModelId}`;
+}
+
 export function populateModelSelects(): void {
+  const t = getTranslations();
   for (const control of getModelControls()) {
-    const sel = control.select;
+    const select = control.select;
     const current = getModelValue(control);
-    sel.innerHTML = "";
-    for (const opt of MODEL_OPTIONS) {
-      const o = document.createElement("option");
-      if (typeof opt === "string") {
-        o.value = opt;
-        o.textContent = opt;
-      } else {
-        o.value = opt.value;
-        o.textContent = opt.label[getCurrentLanguage()] ?? opt.label.ja;
-      }
-      sel.append(o);
-    }
+    select.innerHTML = "";
+    appendOption(select, "", t.modelNone);
+    discoveredModels.forEach((model) => {
+      appendOption(select, model.id, modelLabel(model));
+    });
+    appendOption(select, CUSTOM_MODEL_VALUE, t.customModel);
     setModelControlValue(control, current);
   }
+  renderCatalogControls();
+}
+
+function catalogStatusText(): string {
+  const t = getTranslations();
+  switch (catalogStatus) {
+    case "loading":
+      return t.modelCatalogLoading;
+    case "ready":
+      return t.modelCatalogReady(discoveredModels.length);
+    case "not-configured":
+      return t.modelCatalogNotConfigured;
+    case "failed":
+      return t.modelCatalogFailed;
+    case "idle":
+      return "";
+  }
+  return "";
+}
+
+function renderCatalogControls(): void {
+  const t = getTranslations();
+  elements.modelCatalogRefresh.disabled = catalogStatus === "loading";
+  elements.modelCatalogRefresh.textContent =
+    catalogStatus === "loading" ? t.modelCatalogLoading : t.modelCatalogRefresh;
+  elements.modelCatalogStatus.textContent = catalogStatusText();
+}
+
+export function setModelCatalogLoading(): void {
+  catalogStatus = "loading";
+  renderCatalogControls();
+}
+
+export function applyModelCatalogResult(result: ReadonlyModelCatalogResponse): void {
+  catalogStatus = result.status;
+  if (result.status === "ready") {
+    discoveredModels = result.models;
+    populateModelSelects();
+    return;
+  }
+  renderCatalogControls();
+}
+
+function apiKeyKeyForModel(model: string): string | null {
+  const prefix = getProviderPrefix(model);
+  if (prefix === null) {
+    return null;
+  }
+  return LLM_REGISTRY[prefix]?.apiKeyKey ?? prefix;
+}
+
+function apiKeyKeysToRender(
+  models: readonly string[],
+  apiKeys: Readonly<Record<string, string>>,
+): string[] {
+  const keys = ["openrouter"];
+  const add = (key: string | null): void => {
+    if (key !== null && !keys.includes(key)) {
+      keys.push(key);
+    }
+  };
+  models.forEach((model) => {
+    add(apiKeyKeyForModel(model));
+  });
+  Object.keys(apiKeys).forEach((key) => {
+    add(key);
+  });
+  return keys;
 }
 
 export function renderApiKeyFields(
@@ -80,44 +174,38 @@ export function renderApiKeyFields(
   onChange: () => void,
 ): void {
   elements.apiKeysSection.innerHTML = "";
-  const prefixes: string[] = [];
-  const seen = new Set<string>();
-  models.forEach((model) => {
-    const prefix = getProviderPrefix(model);
-    const apiKeyKey = prefix === null ? null : (LLM_REGISTRY[prefix]?.apiKeyKey ?? prefix);
-    if (apiKeyKey === null || seen.has(apiKeyKey)) {
-      return;
-    }
-    seen.add(apiKeyKey);
-    prefixes.push(apiKeyKey);
-  });
-  prefixes.forEach((prefix) => {
-    elements.apiKeysSection.append(buildApiKeyRow(prefix, apiKeys, onChange));
+  apiKeyKeysToRender(models, apiKeys).forEach((key) => {
+    elements.apiKeysSection.append(buildApiKeyRow(key, apiKeys, onChange));
   });
 }
 
+function providerName(apiKeyKey: string): string {
+  return PROVIDER_NAMES[apiKeyKey] ?? apiKeyKey;
+}
+
 function buildApiKeyRow(
-  prefix: string,
+  apiKeyKey: string,
   apiKeys: Readonly<Record<string, string>>,
   onChange: () => void,
 ): HTMLElement {
   const row = document.createElement("div");
   row.className = "api-key-row";
 
+  const name = providerName(apiKeyKey);
   const label = document.createElement("label");
-  label.textContent = `${prefix} API key`;
-  label.setAttribute("for", `apikey-${prefix}`);
+  label.textContent = `${name} API key`;
+  label.setAttribute("for", `apikey-${apiKeyKey}`);
 
   const wrap = document.createElement("div");
   wrap.className = "api-key-wrap";
 
   const input = document.createElement("input");
   input.type = "password";
-  input.id = `apikey-${prefix}`;
+  input.id = `apikey-${apiKeyKey}`;
   input.className = "input";
-  input.dataset.prefix = prefix;
-  input.placeholder = `${prefix} API key`;
-  input.value = apiKeys[prefix] ?? "";
+  input.dataset.prefix = apiKeyKey;
+  input.placeholder = `${name} API key`;
+  input.value = apiKeys[apiKeyKey] ?? "";
   input.addEventListener("input", onChange);
 
   const toggle = document.createElement("button");

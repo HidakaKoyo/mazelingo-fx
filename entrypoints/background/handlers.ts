@@ -19,6 +19,7 @@ import {
   normaDone,
   openExplanation,
   openOutput,
+  refreshModelCatalog,
   removeVocab,
   translate,
   updateVocab,
@@ -55,6 +56,8 @@ function dispatch(message: MlgMessage, sender: Sender): Promise<unknown> | undef
       return undefined;
     case "mlg:getConfig":
       return loadConfig();
+    case "mlg:refreshModelCatalog":
+      return refreshModelCatalog();
     case "mlg:setConfig":
       return setConfig(message.payload);
     case "mlg:getCacheStats":

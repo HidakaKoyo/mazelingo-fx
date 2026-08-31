@@ -17,7 +17,7 @@ describe("mergeConfig", () => {
     expect(result.enabled).toBe(false);
     expect(result.englishRatio).toBe(60);
     // untouched defaults remain
-    expect(result.models).toEqual(["gpt-5.2"]);
+    expect(result.models).toEqual([]);
     expect(result.minTextLength).toBe(5);
   });
 
@@ -48,9 +48,9 @@ describe("mergeConfig", () => {
     expect("providerOptions" in result).toBe(false);
   });
 
-  it("uses the single source of truth defaults (gpt-5.2, minTextLength 5)", () => {
+  it("uses the single source of truth defaults (no model, minTextLength 5)", () => {
     const result = mergeConfig({});
-    expect(result.models).toEqual(["gpt-5.2"]);
+    expect(result.models).toEqual([]);
     expect(result.minTextLength).toBe(5);
   });
 });
