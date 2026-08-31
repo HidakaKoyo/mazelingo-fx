@@ -6,10 +6,7 @@ import { initSettingsModule } from "./init-settings";
 import { initOutputTab } from "./init-output";
 import { initMessages, initPendingExplanation } from "./init-messages";
 import { initMyExamples, initVocab } from "./init-vocab";
-import {
-  applyModelCatalogResult,
-  setModelCatalogLoading,
-} from "./model";
+import { applyModelCatalogResult, setModelCatalogLoading } from "./model";
 import { refreshModelCatalogRpc } from "./rpc";
 
 async function refreshModelCatalog(saveFirst: boolean): Promise<void> {

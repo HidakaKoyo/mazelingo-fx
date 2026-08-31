@@ -56,14 +56,14 @@ Mazelingo-FXの既定の`include`は`https://*`です。必要に応じて`inclu
 
 OpenRouter APIキーを保存すると、パネルを開いた時と「モデル候補を更新」を押した時に`/api/v1/models/user`から候補を取得します。OpenRouterのprovider設定、プライバシー設定、guardrailを反映した一覧のうち、Mazelingoが使うJSON Schema形式の構造化翻訳に対応するテキストモデルだけを表示します。
 
-| プロバイダー | モデルの指定方法 | キー |
-| --- | --- | --- |
-| OpenRouter | 取得した候補を選択（保存値は`openrouter/<vendor>/<model>`） | OpenRouter APIキー |
-| OpenAI | カスタムに例: `gpt-4.1-mini` | OpenAI APIキー |
-| Anthropic | カスタムに例: `claude-haiku-4-5` | Anthropic APIキー |
-| Gemini | カスタムに例: `gemini-2.5-flash` | Google AI Studio APIキー |
-| DeepSeek | カスタムに例: `deepseek-chat` | DeepSeek APIキー |
-| GLM | カスタムに例: `glm-4-*` | Zhipu AI APIキー |
+| プロバイダー | モデルの指定方法                                            | キー                     |
+| ------------ | ----------------------------------------------------------- | ------------------------ |
+| OpenRouter   | 取得した候補を選択（保存値は`openrouter/<vendor>/<model>`） | OpenRouter APIキー       |
+| OpenAI       | カスタムに例: `gpt-4.1-mini`                                | OpenAI APIキー           |
+| Anthropic    | カスタムに例: `claude-haiku-4-5`                            | Anthropic APIキー        |
+| Gemini       | カスタムに例: `gemini-2.5-flash`                            | Google AI Studio APIキー |
+| DeepSeek     | カスタムに例: `deepseek-chat`                               | DeepSeek APIキー         |
+| GLM          | カスタムに例: `glm-4-*`                                     | Zhipu AI APIキー         |
 
 候補一覧は取得時点のOpenRouter設定を反映しますが、残高、レート制限、障害などによる実行成功までは保証しません。一覧にない対応モデルは「カスタム」からIDを入力できますが、現在のプロバイダー判定規則に一致する必要があります。
 

@@ -122,7 +122,9 @@ function testNormalization(): void {
 
 function testFailures(): void {
   it("returns a safe failure without provider details for HTTP, parse, and shape failures", async () => {
-    const httpFailure = vi.fn<ModelCatalogFetch>().mockResolvedValue(response({ error: "secret" }, false));
+    const httpFailure = vi
+      .fn<ModelCatalogFetch>()
+      .mockResolvedValue(response({ error: "secret" }, false));
     const invalidJson = vi.fn<ModelCatalogFetch>().mockResolvedValue(rejectedJson());
     const invalidShape = vi.fn<ModelCatalogFetch>().mockResolvedValue(response({ data: {} }));
 
