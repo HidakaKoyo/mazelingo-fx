@@ -12,8 +12,8 @@ vi.mock("wxt/browser", () => ({
   },
 }));
 
-import { observeBlock, startIntersectionObserver } from "./blocks";
-import { STATE } from "./state";
+import { observeBlock, retryBlock, startIntersectionObserver } from "./blocks";
+import { STATE, updatePageMatchers } from "./state";
 
 type ObserverCallback = (entries: IntersectionObserverEntry[]) => void;
 
@@ -31,9 +31,7 @@ class FakeIntersectionObserver {
   }
 }
 
-function createBlock(
-  rect: Pick<DOMRect, "bottom" | "left" | "right" | "top">,
-): HTMLElement {
+function createBlock(rect: Pick<DOMRect, "bottom" | "left" | "right" | "top">): HTMLElement {
   const block = document.createElement("p");
   block.dataset.mlgTranslating = "1";
   block.textContent = "A visible English sentence for translation.";
@@ -47,12 +45,36 @@ function createBlock(
   return block;
 }
 
+function createDeferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
+function successfulTranslationResponse(blockCount = 1) {
+  return {
+    blocks: Array.from({ length: blockCount }, () => ({
+      sentences: [
+        {
+          source: "A visible English sentence for translation.",
+          translation: "翻訳済みの英文です。",
+        },
+      ],
+    })),
+  };
+}
+
 describe("observeBlock", () => {
   beforeEach(() => {
     vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
     FakeIntersectionObserver.instances = [];
     STATE.intersectionObserver = null;
     STATE.pendingBlocks = [];
+    STATE.config.pageListInclude = "*";
+    STATE.config.pageListExclude = "";
+    updatePageMatchers();
     document.body.replaceChildren();
     Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
   });
@@ -64,6 +86,8 @@ describe("observeBlock", () => {
     }
     STATE.intersectionObserver = null;
     STATE.pendingBlocks = [];
+    browserMocks.sendMessage.mockReset();
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -80,7 +104,9 @@ describe("observeBlock", () => {
     expect(STATE.pendingBlocks).toHaveLength(1);
     expect(block.dataset.mlgQueued).toBe("1");
 
-    observer.callback([{ isIntersecting: true, target: block } as unknown as IntersectionObserverEntry]);
+    observer.callback([
+      { isIntersecting: true, target: block } as unknown as IntersectionObserverEntry,
+    ]);
 
     expect(STATE.pendingBlocks).toHaveLength(1);
   });
@@ -98,9 +124,43 @@ describe("observeBlock", () => {
     expect(STATE.pendingBlocks).toHaveLength(0);
     expect(block.dataset.mlgQueued).toBeUndefined();
 
-    observer.callback([{ isIntersecting: true, target: block } as unknown as IntersectionObserverEntry]);
+    observer.callback([
+      { isIntersecting: true, target: block } as unknown as IntersectionObserverEntry,
+    ]);
 
     expect(observer.unobserve).toHaveBeenCalledWith(block);
     expect(STATE.pendingBlocks).toHaveLength(1);
+  });
+
+  it("starts the next batch chunk only after the current chunk finishes", async () => {
+    vi.useFakeTimers();
+    const requests = Array.from({ length: 4 }, () =>
+      createDeferred<ReturnType<typeof successfulTranslationResponse>>(),
+    );
+    let requestIndex = 0;
+    browserMocks.sendMessage.mockImplementation(() => {
+      const request = requests[requestIndex];
+      requestIndex += 1;
+      if (!request) throw new Error("unexpected translation request");
+      return request.promise;
+    });
+    const blocks = Array.from({ length: 10 }, () =>
+      createBlock({ bottom: 120, left: 20, right: 120, top: 20 }),
+    );
+
+    blocks.forEach(retryBlock);
+    vi.advanceTimersByTime(200);
+
+    expect(browserMocks.sendMessage).toHaveBeenCalledTimes(3);
+
+    requests.slice(0, 3).forEach((request) => request.resolve(successfulTranslationResponse(3)));
+    for (let index = 0; index < 10; index += 1) {
+      await Promise.resolve();
+    }
+
+    expect(browserMocks.sendMessage).toHaveBeenCalledTimes(4);
+
+    requests[3]?.resolve(successfulTranslationResponse());
+    await Promise.resolve();
   });
 });

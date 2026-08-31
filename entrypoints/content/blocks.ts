@@ -142,12 +142,10 @@ async function translateBlockGroup(
   for (let i = 0; i < blocks.length; i += MAX_BLOCKS_PER_BATCH) {
     batches.push(blocks.slice(i, i + MAX_BLOCKS_PER_BATCH));
   }
-  const chunkPromises: Promise<void[]>[] = [];
   for (let i = 0; i < batches.length; i += MAX_CONCURRENT_BATCHES) {
     const chunk = batches.slice(i, i + MAX_CONCURRENT_BATCHES);
-    chunkPromises.push(Promise.all(chunk.map((batch) => translateBlockBatch(batch, from, to))));
+    await Promise.all(chunk.map((batch) => translateBlockBatch(batch, from, to)));
   }
-  await Promise.all(chunkPromises);
 }
 
 function collectBatchParts(blocks: readonly PendingBlock[]): RetMapping {
