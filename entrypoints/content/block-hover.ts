@@ -2,7 +2,7 @@ import { hashString } from "@/utils/content-logic";
 import { ensureTooltip, hideTooltip } from "./tooltip";
 import { positionTooltip } from "./tooltip-position";
 import { STATE, hasBlockedAncestor, RETRY_COUNTDOWN_MS, sendMessage } from "./state";
-import { isBlockPending, retryBlock } from "./blocks";
+import { isBlockPending, observeBlock, retryBlock } from "./blocks";
 
 const retryTimers = new WeakMap<
   HTMLElement,
@@ -170,8 +170,5 @@ export function processLeafBlock(block: Element): void {
   }
   addEditButton(block);
   bindBlockHover(block);
-  const io = STATE.intersectionObserver;
-  if (io) {
-    io.observe(block);
-  }
+  observeBlock(block);
 }

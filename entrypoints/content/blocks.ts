@@ -65,17 +65,43 @@ export function startIntersectionObserver(): void {
         if (!entry.isIntersecting) {
           return;
         }
-        const block = entry.target;
-        if (!(block instanceof HTMLElement) || block.dataset.mlgQueued === "1") {
-          return;
-        }
-        block.dataset.mlgQueued = "1";
-        STATE.intersectionObserver?.unobserve(block);
-        enqueueBlock(block);
+        queueObservedBlock(entry.target);
       });
     },
     { rootMargin: "1000px" },
   );
+}
+
+function isWithinPreloadMargin(block: HTMLElement): boolean {
+  const rect = block.getBoundingClientRect();
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+  const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+  return (
+    rect.bottom >= -1000 &&
+    rect.top <= viewportHeight + 1000 &&
+    rect.right >= -1000 &&
+    rect.left <= viewportWidth + 1000
+  );
+}
+
+function queueObservedBlock(block: Element): void {
+  if (!(block instanceof HTMLElement) || block.dataset.mlgQueued === "1") {
+    return;
+  }
+  block.dataset.mlgQueued = "1";
+  STATE.intersectionObserver?.unobserve(block);
+  enqueueBlock(block);
+}
+
+/**
+ * Queues an immediately visible block without waiting for the first observer
+ * delivery, while retaining IntersectionObserver for later scrolling.
+ */
+export function observeBlock(block: HTMLElement): void {
+  STATE.intersectionObserver?.observe(block);
+  if (isWithinPreloadMargin(block)) {
+    queueObservedBlock(block);
+  }
 }
 
 function queueBlockTranslate(): void {

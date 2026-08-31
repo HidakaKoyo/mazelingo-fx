@@ -1,6 +1,7 @@
 import { browser } from "wxt/browser";
 import { mergeConfig } from "@/utils/config";
 import type { Config } from "@/utils/config";
+import { STORAGE_KEY } from "@/utils/keys";
 import type { Language, MlgMessage } from "@/utils/messages";
 import { compilePageList, isPageAllowed as isPageAllowedLogic } from "@/utils/content-logic";
 import type { PageMatcher } from "@/utils/content-logic";
@@ -117,24 +118,15 @@ export function isRuntimeError(value: unknown): value is RuntimeError {
 // Resolves with { error } when the service worker is unreachable so callers
 // see the same shape as an application-level failure.
 export function sendMessage<T = unknown>(message: MlgMessage): Promise<T | RuntimeError> {
-  return new Promise<T | RuntimeError>((resolve) => {
-    browser.runtime.sendMessage<MlgMessage, T | RuntimeError>(message, (response) => {
-      const err = browser.runtime.lastError;
-      if (err) {
-        resolve({ error: err.message ?? "Service worker unreachable" });
-        return;
-      }
-      resolve(response);
-    });
-  });
+  return browser.runtime.sendMessage<MlgMessage, T>(message).catch((error: unknown) => ({
+    error: error instanceof Error ? error.message : String(error),
+  }));
 }
 
 export async function loadConfig(): Promise<Config> {
-  const config = await sendMessage<Config>({ type: "mlg:getConfig" });
-  if (isRuntimeError(config)) {
-    throw new Error(`getConfig failed: ${config.error}`);
-  }
-  return mergeConfig(config);
+  const stored = await browser.storage.local.get(STORAGE_KEY);
+  const config = stored[STORAGE_KEY];
+  return mergeConfig(typeof config === "object" && config !== null ? config : undefined);
 }
 
 export function hasBlockedAncestor(element: Element | null): boolean {
