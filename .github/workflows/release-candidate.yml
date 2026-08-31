@@ -55,7 +55,7 @@ jobs:
         with:
           name: firefox-unsigned-${{ inputs.version }}
           path: |
-            .output/*-firefox.zip
+            .output/mazelingo-fx-${{ inputs.version }}-firefox.zip
             .output/firefox-mv3/manifest.json
           if-no-files-found: error
           retention-days: 14
