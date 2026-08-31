@@ -49,7 +49,7 @@ jobs:
         run: npm run lint:firefox
       - name: Upload Firefox package diagnostics
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: firefox-package-diagnostics
           path: .output/firefox-mv3/
@@ -74,7 +74,7 @@ jobs:
           node --input-type=module -e 'import { readFile } from "node:fs/promises"; import { verifyChromeManifest } from "./scripts/verify-manifests.mjs"; verifyChromeManifest(JSON.parse(await readFile(".output/chrome-mv3/manifest.json", "utf8")));'
       - name: Upload Chromium compatibility diagnostics
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: chromium-compat-diagnostics
           path: .output/chrome-mv3/
@@ -101,7 +101,7 @@ jobs:
         run: xvfb-run --auto-servernum -- npm run test:e2e
       - name: Upload Chromium E2E failure artifacts
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: chromium-e2e-diagnostics
           path: |
