@@ -19,6 +19,7 @@ import {
   renderApiKeyFields,
   setModelValues,
   syncCustomModelControl,
+  updateModelPickerTrigger,
 } from "./model";
 import { addCurrentSiteTo } from "./init-output";
 
@@ -67,7 +68,10 @@ function initSettingsListeners(): void {
       }
       onModelChange();
     });
-    control.input.addEventListener("input", onModelChange);
+    control.input.addEventListener("input", () => {
+      updateModelPickerTrigger(control);
+      onModelChange();
+    });
   }
   elements.enabled.addEventListener("change", updateDirtyState);
   elements.mixLanguage.addEventListener("change", updateDirtyState);

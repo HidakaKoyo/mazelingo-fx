@@ -321,8 +321,87 @@
         flex: 1;
         min-width: 0;
       }
-      .model-chain-control .select {
+      .model-picker {
+        position: relative;
         width: 100%;
+      }
+      .model-picker > summary {
+        width: 100%;
+        box-sizing: border-box;
+        cursor: pointer;
+        list-style: none;
+      }
+      .model-picker > summary::-webkit-details-marker {
+        display: none;
+      }
+      .model-picker > summary::after {
+        content: "⌄";
+        float: right;
+        color: #6b7280;
+      }
+      .model-picker[open] > summary::after {
+        content: "⌃";
+      }
+      .model-picker-menu {
+        position: absolute;
+        z-index: 2;
+        top: calc(100% + 4px);
+        width: 100%;
+        max-height: 300px;
+        overflow-y: auto;
+        box-sizing: border-box;
+        padding: 6px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 8px 20px rgb(0 0 0 / 12%);
+      }
+      .model-picker-group-label {
+        display: block;
+        padding: 4px 8px 1px;
+        color: #9ca3af;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .model-picker-option {
+        display: block;
+        width: 100%;
+        border: 0;
+        border-radius: 5px;
+        padding: 3px 8px;
+        background: transparent;
+        color: #111827;
+        font: inherit;
+        font-size: 12px;
+        text-align: left;
+        cursor: pointer;
+      }
+      .model-picker-model-option {
+        padding-left: 16px;
+      }
+      .model-picker-option:hover,
+      .model-picker-option:focus-visible {
+        background: #eff6ff;
+        outline: none;
+      }
+      .model-picker-option[aria-current="true"] {
+        font-weight: 700;
+      }
+      .model-picker-fixed {
+        margin: 4px 0 0;
+      }
+      .model-picker-fixed > summary {
+        padding: 3px 8px;
+        cursor: pointer;
+        color: #4b5563;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .model-picker-fixed .model-picker-group-label {
+        padding-left: 16px;
+      }
+      .model-picker-fixed .model-picker-model-option {
+        padding-left: 24px;
       }
       .custom-model-input {
         margin-top: 8px;
@@ -1725,30 +1804,50 @@
                 <div class="model-chain-row">
                   <span class="model-chain-badge">1st</span>
                   <div class="model-chain-control">
-                    <select id="model0" class="select"></select>
+                    <details id="modelMenu0" class="model-picker">
+                      <summary class="select"><span id="modelMenuTrigger0"></span></summary>
+                      <div id="modelMenuOptions0" class="model-picker-menu"></div>
+                    </details>
+                    <select id="model0" hidden></select>
                     <input id="customModel0" class="input custom-model-input" type="text" hidden />
                   </div>
                 </div>
                 <div class="model-chain-row">
                   <span class="model-chain-badge">2nd</span>
                   <div class="model-chain-control">
-                    <select id="model1" class="select"></select>
+                    <details id="modelMenu1" class="model-picker">
+                      <summary class="select"><span id="modelMenuTrigger1"></span></summary>
+                      <div id="modelMenuOptions1" class="model-picker-menu"></div>
+                    </details>
+                    <select id="model1" hidden></select>
                     <input id="customModel1" class="input custom-model-input" type="text" hidden />
                   </div>
                 </div>
                 <div class="model-chain-row">
                   <span class="model-chain-badge">3rd</span>
                   <div class="model-chain-control">
-                    <select id="model2" class="select"></select>
+                    <details id="modelMenu2" class="model-picker">
+                      <summary class="select"><span id="modelMenuTrigger2"></span></summary>
+                      <div id="modelMenuOptions2" class="model-picker-menu"></div>
+                    </details>
+                    <select id="model2" hidden></select>
                     <input id="customModel2" class="input custom-model-input" type="text" hidden />
                   </div>
                 </div>
               </div>
               <div class="model-catalog-actions">
-                <button type="button" class="page-mode-button model-catalog-refresh" id="modelCatalogRefresh">
+                <button
+                  type="button"
+                  class="page-mode-button model-catalog-refresh"
+                  id="modelCatalogRefresh"
+                >
                   モデル候補を更新
                 </button>
-                <div class="hint model-catalog-status" id="modelCatalogStatus" aria-live="polite"></div>
+                <div
+                  class="hint model-catalog-status"
+                  id="modelCatalogStatus"
+                  aria-live="polite"
+                ></div>
               </div>
             </div>
 

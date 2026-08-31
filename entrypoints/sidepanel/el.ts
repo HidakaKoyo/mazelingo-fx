@@ -1,19 +1,12 @@
 export interface ModelControl {
   select: HTMLSelectElement;
   input: HTMLInputElement;
+  menu: HTMLDetailsElement;
+  menuOptions: HTMLDivElement;
+  menuTrigger: HTMLSpanElement;
 }
 
-type ElOf<T> = T extends "input"
-  ? HTMLInputElement
-  : T extends "select"
-    ? HTMLSelectElement
-    : T extends "textarea"
-      ? HTMLTextAreaElement
-      : T extends "button"
-        ? HTMLButtonElement
-        : T extends "label"
-          ? HTMLLabelElement
-          : HTMLElement;
+type ElOf<T extends keyof HTMLElementTagNameMap> = HTMLElementTagNameMap[T];
 
 const elTags = {
   addCurrentSiteExclude: "button",

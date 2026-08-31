@@ -1,3 +1,4 @@
+/* oxlint-disable max-lines, typescript/no-unnecessary-type-parameters, typescript/prefer-readonly-parameter-types */
 import { LLM_REGISTRY } from "@/utils/llm";
 import type { ModelCatalogResponse } from "@/utils/messages";
 import type { ModelControl } from "./el";
@@ -5,6 +6,12 @@ import { elements } from "./el";
 import { CUSTOM_MODEL_VALUE } from "./constants";
 import { getTranslations } from "./translations";
 import { getProviderPrefix } from "./util";
+import {
+  groupModelsByVendor,
+  modelCatalogLabel,
+  openRouterVendorLabel,
+  splitModelCatalog,
+} from "./model-groups";
 
 type CatalogModel = Readonly<ModelCatalogResponse["models"][number]>;
 type ReadonlyModelCatalogResponse = {
@@ -25,27 +32,43 @@ const PROVIDER_NAMES: Readonly<Record<string, string>> = {
 
 let catalogStatus: CatalogStatus = "idle";
 let discoveredModels: readonly CatalogModel[] = [];
-
 export function getModelControls(): ModelControl[] {
   return [
-    { input: elements.customModel0, select: elements.model0 },
-    { input: elements.customModel1, select: elements.model1 },
-    { input: elements.customModel2, select: elements.model2 },
+    modelControl(0, elements.customModel0, elements.model0),
+    modelControl(1, elements.customModel1, elements.model1),
+    modelControl(2, elements.customModel2, elements.model2),
   ];
 }
 
+function modelControl(
+  index: number,
+  input: HTMLInputElement,
+  select: HTMLSelectElement,
+): ModelControl {
+  return {
+    input,
+    menu: requiredElement<HTMLDetailsElement>(`#modelMenu${index}`),
+    menuOptions: requiredElement<HTMLDivElement>(`#modelMenuOptions${index}`),
+    menuTrigger: requiredElement<HTMLSpanElement>(`#modelMenuTrigger${index}`),
+    select,
+  };
+}
+
+function requiredElement<T extends Element>(selector: string): T {
+  const element = document.querySelector<T>(selector);
+  if (element === null) throw new Error(`Missing required element: ${selector}`);
+  return element;
+}
 export function getModelValue(control: Readonly<ModelControl>): string {
   return control.select.value === CUSTOM_MODEL_VALUE
     ? control.input.value.trim()
     : control.select.value;
 }
-
 export function getSelectedModels(): string[] {
   return getModelControls()
     .map((control) => getModelValue(control))
     .filter((value) => value !== "");
 }
-
 function isListedModel(modelName: string): boolean {
   return discoveredModels.some((model) => model.id === modelName);
 }
@@ -54,6 +77,7 @@ export function syncCustomModelControl(control: Readonly<ModelControl>): void {
   const isCustom = control.select.value === CUSTOM_MODEL_VALUE;
   control.input.hidden = !isCustom;
   control.input.placeholder = getTranslations().customModelPlaceholder;
+  updateModelPickerTrigger(control);
 }
 
 export function setModelControlValue(control: Readonly<ModelControl>, modelName: string): void {
@@ -80,25 +104,102 @@ function appendOption(select: HTMLSelectElement, value: string, label: string): 
   select.append(option);
 }
 
-function modelLabel(model: Readonly<CatalogModel>): string {
-  const providerModelId = model.id.replace(/^openrouter\//u, "");
-  return `${model.name} — ${providerModelId}`;
+function vendorLabel(vendor: string): string {
+  return openRouterVendorLabel(vendor);
 }
 
 export function populateModelSelects(): void {
   const t = getTranslations();
+  const catalog = splitModelCatalog(discoveredModels);
   for (const control of getModelControls()) {
     const select = control.select;
     const current = getModelValue(control);
     select.innerHTML = "";
     appendOption(select, "", t.modelNone);
     discoveredModels.forEach((model) => {
-      appendOption(select, model.id, modelLabel(model));
+      appendOption(select, model.id, modelCatalogLabel(model));
     });
     appendOption(select, CUSTOM_MODEL_VALUE, t.customModel);
     setModelControlValue(control, current);
+    renderModelPicker(control, catalog);
   }
   renderCatalogControls();
+}
+
+function renderModelPicker(
+  control: Readonly<ModelControl>,
+  catalog = splitModelCatalog(discoveredModels),
+): void {
+  const t = getTranslations();
+  control.menuOptions.replaceChildren();
+  appendMenuOption(control, "", t.modelNone);
+  appendMenuGroups(control, catalog.latest, t.modelCatalogOtherVendor);
+  appendMenuOption(control, CUSTOM_MODEL_VALUE, t.customModel);
+
+  if (catalog.fixed.length > 0) {
+    const fixed = document.createElement("details");
+    fixed.className = "model-picker-fixed";
+    const summary = document.createElement("summary");
+    summary.textContent = t.modelCatalogFixedModels;
+    fixed.append(summary);
+    appendMenuGroups(control, catalog.fixed, t.modelCatalogOtherVendor, fixed);
+    control.menuOptions.append(fixed);
+  }
+
+  updateModelPickerTrigger(control);
+}
+
+function appendMenuGroups(
+  control: Readonly<ModelControl>,
+  models: readonly CatalogModel[],
+  otherVendorLabel: string,
+  parent: HTMLElement = control.menuOptions,
+): void {
+  groupModelsByVendor(models).forEach((group) => {
+    const label = document.createElement("span");
+    label.className = "model-picker-group-label";
+    label.textContent = group.vendor === null ? otherVendorLabel : vendorLabel(group.vendor);
+    parent.append(label);
+    group.models.forEach((model) => {
+      appendMenuOption(control, model.id, modelCatalogLabel(model), parent, true);
+    });
+  });
+}
+
+function appendMenuOption(
+  control: Readonly<ModelControl>,
+  value: string,
+  label: string,
+  parent: HTMLElement = control.menuOptions,
+  isModelOption = false,
+): void {
+  const option = document.createElement("button");
+  option.type = "button";
+  option.className = "model-picker-option";
+  if (isModelOption) option.classList.add("model-picker-model-option");
+  option.textContent = label;
+  option.setAttribute("aria-current", String(control.select.value === value));
+  option.addEventListener("click", () => {
+    control.select.value = value;
+    control.select.dispatchEvent(new Event("change", { bubbles: true }));
+    control.menu.open = false;
+    renderModelPicker(control);
+  });
+  parent.append(option);
+}
+
+export function updateModelPickerTrigger(control: Readonly<ModelControl>): void {
+  const value = getModelValue(control);
+  if (value === "") {
+    control.menuTrigger.textContent = getTranslations().modelNone;
+    return;
+  }
+  if (control.select.value === CUSTOM_MODEL_VALUE) {
+    control.menuTrigger.textContent = value || getTranslations().customModel;
+    return;
+  }
+  const selected = discoveredModels.find((model) => model.id === value);
+  control.menuTrigger.textContent = selected === undefined ? value : modelCatalogLabel(selected);
 }
 
 function catalogStatusText(): string {
@@ -135,6 +236,11 @@ export function applyModelCatalogResult(result: ReadonlyModelCatalogResponse): v
   catalogStatus = result.status;
   if (result.status === "ready") {
     discoveredModels = result.models;
+    populateModelSelects();
+    return;
+  }
+  if (result.status === "not-configured") {
+    discoveredModels = [];
     populateModelSelects();
     return;
   }
