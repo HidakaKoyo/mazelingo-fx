@@ -1,7 +1,7 @@
 # アーキテクチャ
 
-Mazelingo-FXは、WXTとTypeScriptで構成したManifest V3拡張です。
-FirefoxとChromeで翻訳や表示の処理を共有し、manifestとパネルAPIだけをブラウザ境界で切り替えます。
+Mazelingo-FXは、WXTとTypeScriptで構成したFirefox Desktop向けManifest V3拡張です。
+Firefoxの翻訳・表示を正式に保証し、Chromium向けの生成物は上流追従を容易にするためのソース互換性確認としてだけ維持します。共通処理と、manifest・パネルAPIのブラウザ境界を分けます。
 
 ```mermaid
 flowchart LR
@@ -37,10 +37,10 @@ WXTは各エントリーポイントを検出し、対象ブラウザ向けのma
 通常の画面遷移、再読み込み、`MutationObserver`による変化、SPAとHistory APIによる画面遷移を考慮しています。
 ブラウザAPIに依存しない処理は、`utils/content-logic*`、`utils/dom-overlay*`、`utils/translation.ts`などへ分離します。
 
-## SidebarとSide Panel
+## Sidebarとブラウザ境界
 
-`entrypoints/sidepanel/`のHTMLと処理は、FirefoxとChromeで共有します。
-FirefoxではSidebar、ChromeではSide Panelとして表示します。
+`entrypoints/sidepanel/`のHTMLと処理はブラウザ境界の内側で共有します。
+FirefoxではSidebarとして表示します。ChromiumのSide Panel生成は、上流追従の互換性を確認するためにだけ残します。
 ツールバーのアイコンから開く操作だけがブラウザ固有です。
 
 ## LLM処理
@@ -78,4 +78,4 @@ APIキーは、`mlg_config.apiKeys`へ平文で保存します。
 `wxt.config.ts`は、Firefoxの`sidebar_action`とChromeの`side_panel`を対象別に生成します。
 `utils/browser-actions.ts`は、Firefoxの`sidebarAction`とChromeの`sidePanel`を呼び分けます。
 共通処理へ条件分岐を散在させず、この二つの場所に差分を閉じ込めます。
-対応関係は[Firefox移植](FIREFOX_PORT.md)を参照してください。
+Firefox向けの責任範囲、Chromium互換性の位置づけ、上流追従は[Firefox移植](FIREFOX_PORT.md)と[Upstream運用](UPSTREAM.md)を参照してください。

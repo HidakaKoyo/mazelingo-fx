@@ -1,8 +1,19 @@
 # テスト
 
-## 自動検査を実行する
+## CIの役割
 
-次のコマンドで、型、書式、単体テスト、ビルド、manifest、E2Eを検査します。
+Pull Requestと`main`へのpushでは、GitHub Actionsが次を実行します。
+
+- **Core checks**：型検査、lint、書式、単体テスト、manifest検査のテスト
+- **Firefox package checks**：Firefox build、Firefox manifest検査、`web-ext lint`
+- **Chromium compatibility**：Chromium buildとChromium manifest検査。Firefox固有の分岐が共通処理へ混入していないことを確認するための検査で、配布・サポートの保証ではない
+- **Chromium E2E (diagnostic)**：Playwrightによる診断。失敗してもFirefox向け品質ゲートは停止しないが、`test-results`とChromium生成物を14日間artifactとして残す
+
+Firefoxの実ブラウザ操作、署名済みXPIの再起動後の確認、実際の外部プロバイダーとの通信はCIで代替しません。Firefoxリリースでは後述の手動確認と[リリース手順](RELEASING.md)が必要です。
+
+## 自動検査をローカルで実行する
+
+次のコマンドで、CIの必須検査をローカルで再現できます。`npm run test:e2e`は診断専用であり、Firefoxリリースの必須条件ではありません。
 
 ```bash
 npm ci
@@ -12,13 +23,13 @@ npm run lint
 npm run fmt -- --check
 npm test
 npm run build:firefox
+npm run lint:firefox
 npm run build:chrome
 npm run verify:manifests
 npm run test:e2e
 ```
 
-Playwright E2Eは、現在Chromiumを中心に実行します。
-Firefox Sidebarの手動確認は、自動E2Eの代わりに成功したものとして扱わず、別の結果として記録してください。
+`npm run test:e2e`は現在Chromiumを中心に実行します。失敗時は`test-results/`を確認し、Firefoxの不具合と断定せず、Chromium互換性の診断結果としてIssueまたはPRへ記録してください。
 
 ## 2026年8月23日のFirefox簡易確認
 
@@ -90,6 +101,7 @@ APIキー自体は記録しません。
 - [ ] クリックで原文と翻訳文を切り替えられる
 - [ ] マウスオーバーで対訳を表示できる
 - [ ] 文法解説を表示できる
+- [ ] 文法解説の外部送信payloadに閲覧中のページURLが含まれない
 - [ ] 語彙を追加、表示できる
 - [ ] OpenAI TTSを再生できる
 - [ ] 再読み込みと通常の画面遷移後に動く
@@ -109,7 +121,9 @@ APIキー自体は記録しません。
 - [ ] FirefoxでCSP、CORS、ホスト権限によるエラーがない
 - [ ] コンソール、エラー、テスト生成物にAPIキーが出ない
 
-## Chromeの回帰を手動で確認する
+## Chromium互換性を調査する
+
+次の項目はFirefoxリリースの品質ゲートではありません。upstream同期やbrowser共通変更を調査するときだけ、必要に応じて実行します。
 
 - [ ] 未圧縮の拡張機能として導入できる
 - [ ] ツールバーのアイコンからSide Panelを開ける

@@ -1,7 +1,7 @@
 # Firefox移植
 
-Firefox移植では、WXTによる複数ブラウザ向けのビルドと、共通のUI、バックグラウンド処理、コンテンツスクリプト、保存処理、LLM処理を再利用します。
-Chrome固有のAPIをFirefox生成物へ含めず、パネル操作だけをブラウザ用アダプターへ隔離します。
+Mazelingo-FXはFirefox Desktop 140以降を正式に配布、動作保証、サポートする下流プロジェクトです。
+WXTによる複数ブラウザ向けのビルドと、共通のUI、バックグラウンド処理、コンテンツスクリプト、保存処理、LLM処理を再利用します。Chrome固有のAPIをFirefox生成物へ含めず、Chromium向け生成物は上流追従のソース互換性確認としてのみ扱います。
 
 ## ブラウザAPIの対応関係
 
@@ -16,6 +16,8 @@ FirefoxとChromeでは、パネルを定義して開くAPIが異なります。
 | `background.service_worker`         | `background.scripts`                    | WXTのManifest V3ビルドに任せる   | 永続化する状態はローカルストレージへ置く    |
 | `chrome.storage.local`              | `browser.storage.local`                 | `wxt/browser`を共通で使う        | APIキーは平文で保存する                     |
 
+この表のChrome列は、Mazelingo-FXがChrome利用者への動作保証をすることを意味しません。Chromiumビルドは、共通処理へFirefox固有の分岐を混入させていないことを確認する内部検査です。
+
 ## 生成したmanifestを確認する
 
 ```bash
@@ -29,8 +31,7 @@ grep -E 'sidebar_action|sidebarAction' .output/chrome-mv3/manifest.json
 必要なFirefox SidebarとChrome Side Panelのキーは、それぞれのmanifestを直接確認します。
 
 Firefoxのmanifestには、拡張機能ID、Firefox 140以降という条件、AMO向けのデータ収集宣言を明示します。
-データ収集宣言は、`authenticationInfo`と`websiteContent`です。
-APIキーと翻訳対象テキストを扱う実装に合わせた宣言であるため、機能や送信データを変えた場合は同時に見直します。
+データ収集宣言は、実際に外部へ送信するデータと一致させます。APIキー、翻訳対象テキスト、host permission、送信先を変えた場合は、manifest、[プライバシーポリシー](privacy-policy.md)、Firefoxの同意表示を同じPull Requestで見直します。文法解説では閲覧中のページURLを外部プロバイダーへ送信しません。
 
 ## Sidebarを開く条件
 
@@ -67,3 +68,5 @@ APIキーをコンソールへ出力せず、エラー本文に含めないこ�
 3. `entrypoints/background/`にあるツールバー操作のlistener
 4. `.output/*/manifest.json`
 5. `docs/TESTING.md`にあるSidebarの動作確認項目
+
+Firefoxを正式リリースするためには、Firefox package検査、Firefox runtime smoke、署名済みXPIのrelease acceptanceをそれぞれ通す必要があります。詳細は[テスト](TESTING.md)と[リリース手順](RELEASING.md)を参照してください。

@@ -3,15 +3,8 @@
 Webページの文章を**文単位で英日（任意の2言語）に混ぜて表示**する、語学学習向けのブラウザ拡張です。
 「日本語と英語を混ぜて読んでいるうちに、英語を英語のまま理解できるようになる」ことを狙っています。
 
-**Mazelingo-FX**は、[Yeq6X/mazelingo](https://github.com/Yeq6X/mazelingo)を正式なupstreamとして保ちながら、Firefoxで継続して利用、保守できるようにした派生版です。
-TypeScript、WXT、テスト環境への移行には、[L4Ph/mazelingo](https://github.com/L4Ph/mazelingo)の実装を技術的な基盤として使用しています。
-
-upstreamが公開しているサービス：
-
-- [Chrome Web Store版](https://chromewebstore.google.com/detail/mazelingo/bhdngeocokoeblnnlhjibojcadefimpi)
-- [Web版（テキストを貼り付けて試す）](https://mazelingo-web.pages.dev)
-
-これらはMazelingo-FXのFirefox配布先ではありません。
+**Mazelingo-FX**は、[Yeq6X/mazelingo](https://github.com/Yeq6X/mazelingo)を正式なupstreamとして追従し、Firefoxで継続して利用・保守するための下流プロジェクトです。
+Firefox向けの配布、更新、サポートはMazelingo-FXが責任を持ちます。上流の配布物やサポート範囲とは別です。
 
 ## できること
 
@@ -19,14 +12,14 @@ upstreamが公開しているサービス：
 - マウスオーバーで対訳を表示し、文法解説、語彙管理、音声読み上げ（TTS）を利用
 - OpenRouterの保存済みAPIキーに応じたモデル候補と、直接プロバイダー用のカスタムモデルIDを使ってLLMを選択
 - サイトごとの有効化、見えている範囲だけの翻訳、2層キャッシュによるAPI消費の抑制
-- Firefox SidebarとChrome Side Panelで共通の設定・学習UIを利用
+- Firefox Sidebarで設定・学習UIを利用
 
 ## 対応ブラウザ
 
-| ブラウザ         | 位置づけ | UI         | 備考                                             |
-| ---------------- | -------- | ---------- | ------------------------------------------------ |
-| Firefox 140以降  | 第一対象 | Sidebar    | 通常版への恒久導入にはMozillaの署名済みXPIが必要 |
-| Chrome、Chromium | 維持対象 | Side Panel | Chrome向けManifest V3ビルドを維持                |
+| ブラウザ             | 位置づけ                       | UI      | 備考                                                 |
+| -------------------- | ------------------------------ | ------- | ---------------------------------------------------- |
+| Firefox Desktop 140+ | 正式な配布・動作保証・サポート | Sidebar | 通常版への恒久導入にはMozillaの署名済みXPIが必要     |
+| Chrome、Chromium     | ソースの互換性確認のみ         | —       | 配布、利用者サポート、実ブラウザの回帰保証は行わない |
 
 ビルドの成功は、ストア配布や署名済みパッケージの公開を意味しません。
 配布先が示されていない場合、通常版Firefoxへ恒久導入できるMazelingo-FXは未提供です。
@@ -43,15 +36,9 @@ upstreamが公開しているサービス：
 一時的に導入した拡張機能は、Firefoxを終了すると解除されます。再起動後は読み込み直してください。
 通常版Firefoxへ恒久導入するには、Mozilla Add-ons（AMO）で署名されたXPIが必要です。ローカルで生成した未署名XPIや`.output/firefox-mv3/`は恒久導入できません。
 
-### Chromeへ一時的に導入する
-
-1. `npm ci`と`npm run build:chrome`を実行します。
-2. `chrome://extensions`でデベロッパーモードを有効にします。
-3. 「パッケージ化されていない拡張機能を読み込む」から`.output/chrome-mv3/`を選択します。
-
 ## モデルとサイトを設定する
 
-SidebarまたはSide Panelで、利用するモデル、APIキー、翻訳対象サイトを設定します。
+Firefox Sidebarで、利用するモデル、APIキー、翻訳対象サイトを設定します。
 Mazelingo-FXの既定の`include`は`https://*`です。必要に応じて`include`と`exclude`の一覧で対象を絞ってください。
 
 OpenRouter APIキーを保存すると、パネルを開いた時と「モデル候補を更新」を押した時に`/api/v1/models/user`から候補を取得します。OpenRouterのprovider設定、プライバシー設定、guardrailを反映した一覧のうち、Mazelingoが使うJSON Schema形式の構造化翻訳に対応するテキストモデルだけを表示します。
@@ -76,6 +63,7 @@ APIキーは暗号化せず、ブラウザ拡張の`storage.local`へ平文で�
 この保存先は、OSやブラウザの利用者から情報を守る秘密保管庫ではありません。共有端末や信頼できないプロファイルにはAPIキーを保存しないでください。
 
 翻訳、文法解説、文章へのフィードバック、語彙分析、クイズ生成では、対象テキストとAPIキーをバックグラウンド処理から選択したプロバイダーへ直接送信します。
+文法解説では、対象文、任意の訳文、言語情報だけを送信し、閲覧中のページURLは送信しません。
 音声読み上げでは、対象テキストとAPIキーをOpenAIへ直接送信します。
 OpenRouterのモデル候補を取得するときは、OpenRouter APIキーだけをOpenRouterへ送信し、閲覧中の本文は送信しません。
 独自の中継サーバーや利用状況の分析機能はありません。各プロバイダーの利用規約とデータ保持方針を確認してください。
@@ -84,18 +72,15 @@ OpenRouterのモデル候補を取得するときは、OpenRouter APIキーだ�
 
 ```bash
 npm ci                  # postinstallでwxt prepareも実行
-npm run dev             # Chrome向けWXT開発サーバー
 npm run dev:firefox     # 一時プロファイルでFirefox向け開発版を実行
 npm run dev:firefox:lab # 設定を保持する専用Firefox Labで実行
-npm run build           # Chrome向けビルド
-npm run build:local     # Chrome向けビルド + リポジトリ直下へミラー
 npm run build:firefox   # Firefox Manifest V3ビルド
-npm run zip             # Chrome向け提出用ZIP
 npm run zip:firefox     # Firefox向け提出用ZIP
+npm run build:chrome    # Chromium互換性確認用ビルド
 npm run compile         # TypeScript型検査
 npm run lint            # lint
 npm test                # Vitest + manifest検査
-npm run test:e2e        # Playwright E2E
+npm run test:e2e        # Chromium互換性の診断用E2E
 ```
 
 TypeScriptはstrictモード、ビルドはWXTです。
@@ -119,20 +104,18 @@ Labは実利用のdogfooding用です。翻訳や文法解説を実行した本�
 
 詳しくは[アーキテクチャ](docs/ARCHITECTURE.md)と[Firefox移植](docs/FIREFOX_PORT.md)を参照してください。
 
-## Upstreamと実装の由来
+## Upstreamと運用
 
 - 正式なupstream：[Yeq6X/mazelingo](https://github.com/Yeq6X/mazelingo)
-- 技術的な基盤として使用したWXT実装：[L4Ph/mazelingo](https://github.com/L4Ph/mazelingo)
-- Mazelingo-FXで追加した要素：Firefox Sidebar対応、ブラウザ差分の隔離、複数ブラウザ向けのビルド、テスト、文書
+- Mazelingo-FXの責任：Firefox Sidebar、Firefox manifest、Firefox向けの検証・配布・サポート
+- Chromiumの責任：上流追従を保つためのソース互換性確認だけ
 
-L4Phの`feature/wxt-typescript-migration`にあるコミット`ddd6342`を、Yeq6X upstreamの`6b91045`を起点とする作業ブランチへfast-forwardで取り込みました。
-ファイルの複製ではないため、実装の由来をGitで追跡できます。
-リモートの構成と追従手順は[Upstreamと履歴](docs/UPSTREAM.md)に記録しています。
+上流同期、Firefox-only差分、リリースの手順は[Upstream運用](docs/UPSTREAM.md)と[貢献ガイド](CONTRIBUTING.md)を参照してください。
 
 ## コントリビュート
 
-IssueとPull Requestを歓迎します。
-バグ報告には、利用したモデルID、秘密情報を除いたエラー、対象ページのURLを添えてください。
+IssueとPull Requestを歓迎します。[貢献ガイド](CONTRIBUTING.md)と[サポート範囲](SUPPORT.md)を先に確認してください。
+APIキー、認証情報、ページ本文、個人情報をIssueやPull Requestへ記載しないでください。
 
 ## 謝辞
 
@@ -143,4 +126,3 @@ Mazelingoをオープンソースとして公開してくださったことに�
 
 MIT Licenseです。
 元プロジェクトの著作権表示とライセンス本文は[LICENSE](LICENSE)に保持しています。
-L4Ph版を技術的な基盤にした事実は、上記のとおり明示しています。

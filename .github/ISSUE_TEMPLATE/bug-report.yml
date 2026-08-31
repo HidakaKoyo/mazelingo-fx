@@ -1,0 +1,59 @@
+name: Firefox bug report
+description: Firefox Desktopで再現するMazelingo-FXの不具合を報告する
+title: "[Firefox]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Mazelingo-FXはFirefox Desktopを正式対象としています。APIキー、認証情報、ページ本文、個人情報、完全な閲覧URLは記載しないでください。
+  - type: input
+    id: firefox-version
+    attributes:
+      label: Firefoxのバージョン
+      placeholder: "例: 140.0"
+    validations:
+      required: true
+  - type: input
+    id: extension-version
+    attributes:
+      label: Mazelingo-FXのバージョンまたはコミット
+      placeholder: "例: v0.5.0-fx.1 または abc1234"
+    validations:
+      required: true
+  - type: input
+    id: site-domain
+    attributes:
+      label: 対象サイトのドメイン（任意）
+      description: 完全なURLや閲覧内容ではなく、必要な場合だけドメインを記載してください。
+      placeholder: "example.com"
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      placeholder: 秘密情報や本文を含めず、最小の手順を記載してください。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待する結果
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の結果
+      description: エラーは秘密情報を伏せて記載してください。
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 確認
+      options:
+        - label: APIキー、認証情報、ページ本文、個人情報を記載していない
+          required: true
+        - label: Chromiumのみで再現する問題ではない
+          required: true

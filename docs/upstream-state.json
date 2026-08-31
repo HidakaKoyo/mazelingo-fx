@@ -1,0 +1,12 @@
+{
+  "upstream": {
+    "repository": "Yeq6X/mazelingo",
+    "remote": "upstream",
+    "branch": "main",
+    "lastMergedCommit": "161132c55646b27560de8a5f2d4f4e4d8eb83e58",
+    "lastReviewedCommit": "161132c55646b27560de8a5f2d4f4e4d8eb83e58",
+    "lastReviewedAt": "2026-08-31"
+  },
+  "lastSyncPullRequest": null,
+  "notes": "Update this file only through a reviewed upstream sync pull request."
+}

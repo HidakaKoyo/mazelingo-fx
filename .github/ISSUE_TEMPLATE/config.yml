@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: サポート範囲
+    url: https://github.com/HidakaKoyo/mazelingo-fx/blob/main/SUPPORT.md
+    about: Firefox Desktopが正式対象です。Chromiumの利用者サポートは行いません。

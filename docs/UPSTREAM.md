@@ -1,81 +1,81 @@
-# Upstreamと履歴
+# Upstream 同期
 
-Mazelingo-FXは、Yeq6X版を正式なupstream、L4Ph版を技術的な基盤として扱います。
+Mazelingo-FX の通常 upstream は [`Yeq6X/mazelingo`](https://github.com/Yeq6X/mazelingo) だけです。Firefox Desktop を正式製品として保守し、Chromium は非配布の互換性確認に限定します。運用契約は [ADR 0001](adr/0001-firefox-downstream-contract.md) を参照してください。
+
+## 同期状態
+
+機械可読な正本は [upstream-state.json](upstream-state.json) です。
+
+- last fully integrated: `161132c55646b27560de8a5f2d4f4e4d8eb83e58`
+- last reviewed: `161132c55646b27560de8a5f2d4f4e4d8eb83e58`（2026-08-31）
+
+`lastMergedCommit`は、そのcommitまでのupstream変更をすべてMazelingo-FXへ統合した場合だけ進めます。`lastReviewedCommit`は、採用・見送りを判断した範囲まで進めます。両者が異なるときは、未統合または見送りの判断があるため、`lastSyncPullRequest`で示す同期PRを確認してください。
+
+GitHub Actionsの`Upstream watch`は毎週、状態を確認します。未確認の更新を見つけたときだけ`Upstream review: Yeq6X/mazelingo`という単一の追跡Issueを作成または更新し、確認対象がなくなれば閉じます。これは確認の通知と記録のためだけの自動化であり、同期PRやmergeを自動作成しません。
+
+## リモートと push の安全策
+
+必要なリモートは次の2つです。
 
 ```text
-Yeq6X/mazelingo
-        │ 正式なupstream
-        ▼
-HidakaKoyo/mazelingo-fx
-        ▲ TypeScriptとWXTの実装
-L4Ph/mazelingo
+origin   https://github.com/HidakaKoyo/mazelingo-fx.git
+upstream https://github.com/Yeq6X/mazelingo.git
 ```
 
-Yeq6X版から機能変更を追従し、HidakaKoyo版でFirefox対応を保守します。
-L4Ph版は、TypeScriptとWXTへの移行に利用した技術的な基盤です。
-
-## Gitリモートの構成
-
-期待するリモートは、次のとおりです。
-
-```text
-l4ph     https://github.com/L4Ph/mazelingo.git (fetch/push)
-origin   https://github.com/HidakaKoyo/mazelingo-fx.git (fetch/push)
-upstream https://github.com/Yeq6X/mazelingo.git (fetch/push)
-```
-
-`git remote -v`における表示順は問いません。
-通常は`origin`だけへpushします。
-リモートがない場合は、次のコマンドで追加します。
+`origin` だけが push 先です。clone 後、upstream を read-only に固定します。
 
 ```bash
 git remote add upstream https://github.com/Yeq6X/mazelingo.git
-git remote add l4ph https://github.com/L4Ph/mazelingo.git
+git remote set-url --push upstream no_push
+git config remote.pushDefault origin
 ```
 
-## L4Ph版を取り込んだ方法
+`no_push` は意図しない upstream への push を失敗させるダミー push URL です。既存 clone でも一度設定し、`git remote -v` で `upstream (push)` が `no_push` であることを確認してください。
 
-L4Phの`feature/wxt-typescript-migration`にあるコミット`ddd6342`（`ddd63426f9bd191cbc896220945e96dd29adc2c9`）を、Yeq6X upstreamの`6b91045`を指す作業ブランチへfast-forwardで取り込みました。
+## 同期手順
 
-```text
-6b91045  Yeq6X upstream/main
-   └── ddd6342  L4Ph feature/wxt-typescript-migration
-```
-
-このコミットには、TypeScriptとWXTへの移行、エントリーポイントの再構成、Vitest、Playwright、lint、CIが含まれます。
-共通祖先上のコミットとして取り込むことで、余分なマージコミット、subtree、ファイルの複製を作らず、`git log`と`git blame`から由来を追跡できます。
-
-## Yeq6X版の変更を追従する
-
-WXTへの移行後はファイル構成が異なるため、`upstream/main`をそのままマージできるとは限りません。
-専用ブランチで旧JavaScript実装の変更意図を確認し、現在のTypeScript構成へ移植します。
+同期は常に専用 branch と pull request で行います。GitHub の fork sync 操作、`main` 上での `git pull upstream main`、自動 merge は使いません。
 
 ```bash
-git fetch upstream --prune
 git switch main
 git pull --ff-only origin main
-git switch -c chore/sync-upstream-YYYYMMDD
-git log --oneline 6b91045..upstream/main
-git diff 6b91045..upstream/main -- \
-  background.js content_script.js dom-overlay.js llm.js config.js manifest.json
+npm run check:upstream -- --fetch
+BASE="$(node -p \"require('./docs/upstream-state.json').upstream.lastMergedCommit\")"
+git switch -c sync/yeq6x-YYYYMMDD
+git log --oneline "$BASE..upstream/main"
+git diff --stat "$BASE..upstream/main"
 ```
 
-`6b91045`は、L4Ph版のWXT移行を取り込んだ時点で、最後に同期したYeq6X版のコミットです。
-変更ごとに意図とテストを確認し、対応する`entrypoints/`または`utils/`へ移植します。
-upstreamのコミットIDはコミット本文かpull requestへ記録します。
-移植後は、型検査、lint、単体テスト、FirefoxとChromeのビルドを実行します。
-追従が完了したら、この文書にある最終同期コミットを更新し、次回の比較起点にします。
+### clean merge できる場合
 
-## L4Ph版の更新を確認する
-
-L4Ph版は正式なupstreamではありません。
-新しいWXT関連の改善も自動ではマージせず、差分ごとに採用を判断します。
+upstream の履歴を保持します。
 
 ```bash
-git fetch l4ph --prune
-git log --oneline ddd6342..l4ph/feature/wxt-typescript-migration
-git diff ddd6342..l4ph/feature/wxt-typescript-migration
+git merge --no-ff upstream/main
 ```
 
-採用する場合は、L4Ph版のコミットIDと採用理由を記録します。
-Yeq6X版に由来する機能変更とは区別してください。
+競合を解消したら、Firefox と Chromium の build、manifest 検証、lint、単体テストを実行して PR を作成します。
+
+### Firefox 固有構造と衝突する場合
+
+機械的な競合解消で意図を失わないよう、merge を中止します。
+
+```bash
+git merge --abort
+```
+
+必要な upstream commit を `cherry-pick -x` するか、変更意図を Firefox 側の構造へ移植します。対象 commit、採用・見送りの理由、適応箇所を PR に記録してください。sync PRをmergeした後、判断した範囲まで`lastReviewedCommit`と`lastReviewedAt`を更新します。`lastMergedCommit`は、そこまでのupstream変更をすべて統合できた場合だけ更新します。
+
+## 同期 PR の記録
+
+同期 PR には必ず次を含めます。
+
+- 比較した upstream commit 範囲
+- merge、cherry-pick、意味移植、見送りの別
+- 各見送りの理由
+- Firefox 固有の適応箇所
+- 実行した検証と未実施の確認
+- 更新した`lastMergedCommit`、`lastReviewedCommit`、`lastReviewedAt`
+- 一部を見送った場合は、見送ったcommitと理由、および`lastSyncPullRequest`
+
+browser 共通の修正は upstream への提案を優先し、Mazelingo-FX だけに残す場合は理由を同じ PR に記録します。
