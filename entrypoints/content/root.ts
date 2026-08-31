@@ -54,16 +54,18 @@ function checkNormaCache(): void {
   });
 }
 
-export function refreshDisplay(): void {
+export function refreshDisplay(preserveManual = false): void {
   const blocks = document.querySelectorAll("[data-mlg-block]");
   blocks.forEach((block) => {
     const spans = [...block.querySelectorAll<HTMLElement>("span[data-mlg-sentence]")];
     if (spans.length === 0) {
       return;
     }
-    spans.forEach((span) => {
-      delete span.dataset.mlgDisplay;
-    });
+    if (!preserveManual) {
+      spans.forEach((span) => {
+        delete span.dataset.mlgDisplay;
+      });
+    }
     const displays = assignBlockDisplayLanguages(
       spans,
       STATE.config.englishRatio,

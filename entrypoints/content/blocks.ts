@@ -11,50 +11,61 @@ import {
   MAX_BLOCKS_PER_BATCH,
   MAX_CONCURRENT_BATCHES,
   STATE,
+  isCurrentTranslationRequest,
   isPageAllowed,
   isRuntimeError,
   sendMessage,
 } from "./state";
 import type { PendingBlock, MlgTranslateResponse } from "./state";
 import type { DeepReadonly } from "@/utils/cache";
-
 interface RetMapping {
   allParts: string[];
   blockMapping: { blockIndex: number; partCount: number }[];
 }
-
 export function isBlockPending(block: HTMLElement): boolean {
   return block.dataset.mlgTranslating === "1" || block.dataset.mlgFailed === "1";
 }
 
 export function retryBlock(block: HTMLElement): void {
   delete block.dataset.mlgFailed;
+  delete block.dataset.mlgReaderFailed;
   block.dataset.mlgTranslating = "1";
   enqueueBlock(block);
 }
-
 function enqueueBlock(block: HTMLElement): void {
-  if (!block.isConnected || block.dataset.mlgTranslating !== "1") {
+  const pending = createPendingBlock(block, "auto");
+  if (!pending) {
     return;
+  }
+  STATE.pendingBlocks.push(pending);
+  queueBlockTranslate();
+}
+export function createPendingBlock(
+  block: HTMLElement,
+  mode: "auto" | "reader",
+): PendingBlock | null {
+  if (!block.isConnected || block.dataset.mlgTranslating !== "1") {
+    return null;
   }
   const lang = detectLang(block.textContent);
   const cleaned = cleanHtmlForTranslation(block);
   if (!hasTranslatableText(cleaned.html)) {
     delete block.dataset.mlgTranslating;
-    return;
+    return null;
   }
   const { parts, separators } = splitHtmlByLineBreaks(cleaned.clone.innerHTML);
   const cleanParts = parts.map((part) => serializeCleanPart(part));
-  STATE.pendingBlocks.push({
+  return {
     atoms: cleaned.atoms,
     element: block,
     htmlParts: cleanParts,
+    href: location.href,
     lang,
+    mode,
+    runId: STATE.runId,
     separators,
-  });
-  queueBlockTranslate();
+  };
 }
-
 export function startIntersectionObserver(): void {
   if (STATE.intersectionObserver) {
     return;
@@ -71,7 +82,6 @@ export function startIntersectionObserver(): void {
     { rootMargin: "1000px" },
   );
 }
-
 function isWithinPreloadMargin(block: HTMLElement): boolean {
   const rect = block.getBoundingClientRect();
   const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
@@ -83,8 +93,10 @@ function isWithinPreloadMargin(block: HTMLElement): boolean {
     rect.left <= viewportWidth + 1000
   );
 }
-
 function queueObservedBlock(block: Element): void {
+  if (STATE.mode === "reader") {
+    return;
+  }
   if (!(block instanceof HTMLElement) || block.dataset.mlgQueued === "1") {
     return;
   }
@@ -92,7 +104,6 @@ function queueObservedBlock(block: Element): void {
   STATE.intersectionObserver?.unobserve(block);
   enqueueBlock(block);
 }
-
 /**
  * Queues an immediately visible block without waiting for the first observer
  * delivery, while retaining IntersectionObserver for later scrolling.
@@ -103,7 +114,25 @@ export function observeBlock(block: HTMLElement): void {
     queueObservedBlock(block);
   }
 }
-
+/** Reconnects untranslated blocks after a temporary reader-mode pause. */
+export function resumeUntranslatedBlocks(): void {
+  document.querySelectorAll<HTMLElement>("[data-mlg-block='1']").forEach((block) => {
+    const wasReaderFailure = block.dataset.mlgReaderFailed === "1";
+    if (
+      block.querySelector("[data-mlg-sentence]") ||
+      (block.dataset.mlgTranslating !== "1" && !wasReaderFailure)
+    ) {
+      return;
+    }
+    if (wasReaderFailure) {
+      delete block.dataset.mlgReaderFailed;
+      delete block.dataset.mlgFailed;
+      block.dataset.mlgTranslating = "1";
+    }
+    delete block.dataset.mlgQueued;
+    observeBlock(block);
+  });
+}
 function queueBlockTranslate(): void {
   if (STATE.blockTranslateTimer !== null) {
     clearTimeout(STATE.blockTranslateTimer);
@@ -115,7 +144,6 @@ function queueBlockTranslate(): void {
     });
   }, 200);
 }
-
 async function translatePendingBlocks(): Promise<void> {
   if (!STATE.config.enabled || STATE.config.models.length === 0 || !isPageAllowed()) {
     STATE.pendingBlocks = [];
@@ -132,22 +160,25 @@ async function translatePendingBlocks(): Promise<void> {
     jaBlocks.length > 0 ? translateBlockGroup(jaBlocks, "ja", "en") : Promise.resolve(),
   ]);
 }
-
-async function translateBlockGroup(
+function translateBlockGroup(
   blocks: readonly PendingBlock[],
   from: Language,
   to: Language,
 ): Promise<void> {
-  const batches: PendingBlock[][] = [];
-  for (let i = 0; i < blocks.length; i += MAX_BLOCKS_PER_BATCH) {
-    batches.push(blocks.slice(i, i + MAX_BLOCKS_PER_BATCH));
-  }
-  for (let i = 0; i < batches.length; i += MAX_CONCURRENT_BATCHES) {
-    const chunk = batches.slice(i, i + MAX_CONCURRENT_BATCHES);
-    await Promise.all(chunk.map((batch) => translateBlockBatch(batch, from, to)));
-  }
+  const batches = Array.from(
+    { length: Math.ceil(blocks.length / MAX_BLOCKS_PER_BATCH) },
+    (_, index) => blocks.slice(index * MAX_BLOCKS_PER_BATCH, (index + 1) * MAX_BLOCKS_PER_BATCH),
+  );
+  const translateChunk = (offset: number): Promise<void> =>
+    offset >= batches.length
+      ? Promise.resolve()
+      : Promise.all(
+          batches
+            .slice(offset, offset + MAX_CONCURRENT_BATCHES)
+            .map((batch) => translateBlockBatch(batch, from, to)),
+        ).then(() => translateChunk(offset + MAX_CONCURRENT_BATCHES));
+  return translateChunk(0);
 }
-
 function collectBatchParts(blocks: readonly PendingBlock[]): RetMapping {
   const allParts: string[] = [];
   const blockMapping: { blockIndex: number; partCount: number }[] = [];
@@ -157,23 +188,30 @@ function collectBatchParts(blocks: readonly PendingBlock[]): RetMapping {
   });
   return { allParts, blockMapping };
 }
-
 async function translateBlockBatch(
   blocks: readonly PendingBlock[],
   from: Language,
   to: Language,
 ): Promise<void> {
+  if (!blocks.every((block) => isCurrentTranslationRequest(block))) {
+    return;
+  }
   const { allParts, blockMapping } = collectBatchParts(blocks);
   const response = await sendMessage<MlgTranslateResponse>({
     payload: { from, htmlBlocks: allParts, to },
     type: "mlg:translate",
   });
+  if (!blocks.every((block) => isCurrentTranslationRequest(block))) {
+    return;
+  }
   if (response === undefined || isRuntimeError(response)) {
     if (blocks[0]?.retried !== true) {
       blocks.forEach((b) => {
         b.retried = true;
       });
-      await translateBlockBatch(blocks, from, to);
+      if (blocks.every((block) => isCurrentTranslationRequest(block))) {
+        await translateBlockBatch(blocks, from, to);
+      }
       return;
     }
     blocks.forEach((b) => {
@@ -184,7 +222,6 @@ async function translateBlockBatch(
   }
   applyBatchResults(blocks, blockMapping, response.blocks ?? [], from);
 }
-
 function findFailedParts(
   partOffset: number,
   partCount: number,
@@ -204,7 +241,6 @@ function findFailedParts(
   }
   return failed;
 }
-
 function assembleSentences(
   partOffset: number,
   partCount: number,
@@ -226,7 +262,6 @@ function assembleSentences(
   }
   return sentences;
 }
-
 function applyBatchResults(
   blocks: readonly PendingBlock[],
   blockMapping: readonly Readonly<{ blockIndex: number; partCount: number }>[],
@@ -238,7 +273,7 @@ function applyBatchResults(
     const block = blocks[blockIndex];
     const partOffset = offset;
     offset += partCount;
-    if (!block || !block.element.isConnected) {
+    if (!block || !block.element.isConnected || !isCurrentTranslationRequest(block)) {
       return;
     }
     const failedPartIndices = findFailedParts(partOffset, partCount, resultBlocks);

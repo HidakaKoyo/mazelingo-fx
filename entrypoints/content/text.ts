@@ -36,6 +36,9 @@ export function getDesiredDisplay(span: MlgSpan): string {
   if (manual === "en" || manual === "ja") {
     return manual;
   }
+  if (STATE.displayOverride !== null) {
+    return STATE.displayOverride;
+  }
   return span.dataset.mlgDefaultDisplay ?? span.dataset.mlgLang ?? "en";
 }
 

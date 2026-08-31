@@ -200,6 +200,7 @@ export interface ExplainResponse {
  * accepts. Each variant carries its own payload type.
  */
 export type MlgMessage =
+  | { type: "mlg:readerRun"; payload?: undefined }
   | { type: "mlg:getConfig"; payload?: undefined }
   | { type: "mlg:setConfig"; payload: SetConfigPayload }
   | { type: "mlg:getCacheStats"; payload?: undefined }

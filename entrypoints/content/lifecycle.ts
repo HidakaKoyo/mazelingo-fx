@@ -7,6 +7,7 @@ import { STATE, isPageAllowed, loadConfig, updatePageMatchers } from "./state";
 import { start, stop, watchUrlChanges } from "./observer";
 import { refreshDisplay } from "./root";
 import { buildNormaKey } from "./blocks";
+import { startReaderMode } from "./reader";
 
 function isConfigRecord(value: unknown): value is Config {
   return typeof value === "object" && value !== null;
@@ -19,6 +20,10 @@ export async function init(): Promise<void> {
     start();
   }
   browser.runtime.onMessage.addListener((message: MlgMessage) => {
+    if (message.type === "mlg:readerRun") {
+      startReaderMode();
+      return;
+    }
     if (message.type === "mlg:normaDone" && message.payload?.textKey) {
       const blocks = document.querySelectorAll<HTMLElement>("[data-mlg-output='1']");
       blocks.forEach((block) => {

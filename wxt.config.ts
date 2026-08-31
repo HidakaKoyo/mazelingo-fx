@@ -54,6 +54,12 @@ export default defineConfig({
               default_panel: "sidepanel.html",
               default_title: "Mazelingo",
             },
+            commands: {
+              "reader-translate-page": {
+                description: "Translate this page in reading mode",
+                suggested_key: { default: "Ctrl+Shift+U" },
+              },
+            },
           }
         : {
             side_panel: {

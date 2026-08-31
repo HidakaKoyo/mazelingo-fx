@@ -51,6 +51,8 @@ function respondAsync<T>(
 
 function dispatch(message: MlgMessage, sender: Sender): Promise<unknown> | undefined {
   switch (message.type) {
+    case "mlg:readerRun":
+      return undefined;
     case "mlg:getConfig":
       return loadConfig();
     case "mlg:setConfig":

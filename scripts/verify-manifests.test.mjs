@@ -23,6 +23,11 @@ const validFirefoxManifest = {
   permissions: ["storage"],
   sidebar_action: { default_panel: "sidepanel.html" },
   background: { scripts: ["background.js"] },
+  commands: {
+    "reader-translate-page": {
+      suggested_key: { default: "Ctrl+Shift+U" },
+    },
+  },
   browser_specific_settings: {
     gecko: {
       id: "mazelingo-fx@example.org",
@@ -123,6 +128,13 @@ test("rejects Firefox manifests without signing and data consent metadata", () =
         },
       }),
     /must disclose authenticationInfo and websiteContent/u,
+  );
+});
+
+test("rejects Firefox manifests without the reader shortcut", () => {
+  assert.throws(
+    () => verifyFirefoxManifest({ ...validFirefoxManifest, commands: {} }),
+    /must define the reader-translate-page shortcut/u,
   );
 });
 

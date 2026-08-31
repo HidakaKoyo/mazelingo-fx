@@ -149,7 +149,7 @@ function shouldMarkOutput(text: string): boolean {
   return hashString(`output::${location.href}::${text}`) % 100 < ratio;
 }
 
-export function processLeafBlock(block: Element): void {
+export function processLeafBlock(block: Element, observe = true): void {
   if (!(block instanceof HTMLElement)) {
     return;
   }
@@ -168,7 +168,12 @@ export function processLeafBlock(block: Element): void {
   if (shouldMarkOutput(text.trim())) {
     block.dataset.mlgOutput = "1";
   }
-  addEditButton(block);
-  bindBlockHover(block);
-  observeBlock(block);
+  if (block.dataset.mlgBound !== "1") {
+    block.dataset.mlgBound = "1";
+    addEditButton(block);
+    bindBlockHover(block);
+  }
+  if (observe) {
+    observeBlock(block);
+  }
 }

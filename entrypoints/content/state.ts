@@ -11,7 +11,7 @@ export const HOVER_ACTIVATION_MS = 300;
 export const TOGGLE_ANIMATION_MS = 1400;
 const BUTTON_SELECTOR = "button,[role='button']",
   SKIP_SELECTOR =
-    "script,style,textarea,input,code,pre,noscript,svg,math,select,option,nav,header,footer,aside,[role='navigation'],[role='banner'],[role='contentinfo'],[contenteditable='true'],[translate='no'],.notranslate,[data-mlg-sentence],[data-mlg-tooltip],[data-mlg-block]";
+    "script,style,textarea,input,code,pre,noscript,svg,math,select,option,nav,header,footer,aside,[role='navigation'],[role='banner'],[role='contentinfo'],[contenteditable='true'],[translate='no'],.notranslate,[data-mlg-sentence],[data-mlg-tooltip],[data-mlg-block],[data-mlg-reader-status]";
 
 export const BLOCK_DISPLAY_VALUES = new Set([
   "block",
@@ -43,6 +43,9 @@ export interface PendingBlock {
   separators: string[];
   atoms: Map<number, Node>;
   lang: Language;
+  mode: "auto" | "reader";
+  href: string;
+  runId: number;
   retried?: boolean;
 }
 
@@ -62,6 +65,10 @@ interface ContentState {
   observer: MutationObserver | null;
   intersectionObserver: IntersectionObserver | null;
   pendingBlocks: PendingBlock[];
+  mode: "auto" | "reader";
+  runId: number;
+  runHref: string;
+  displayOverride: Language | null;
   blockTranslateTimer: ReturnType<typeof setTimeout> | null;
   tooltip: TooltipState | null;
   tooltipHover: boolean;
@@ -83,6 +90,10 @@ const initialState: ContentState = {
   intersectionObserver: null,
   observer: null,
   pendingBlocks: [],
+  mode: "auto",
+  runId: 0,
+  runHref: "",
+  displayOverride: null,
   started: false,
   tooltip: null,
   tooltipHover: false,
@@ -113,6 +124,15 @@ export interface RuntimeError {
 
 export function isRuntimeError(value: unknown): value is RuntimeError {
   return typeof value === "object" && value !== null && "error" in value;
+}
+
+export function isCurrentTranslationRequest(block: PendingBlock): boolean {
+  return (
+    STATE.mode === block.mode &&
+    STATE.runId === block.runId &&
+    location.href === block.href &&
+    STATE.runHref === block.href
+  );
 }
 
 // Resolves with { error } when the service worker is unreachable so callers

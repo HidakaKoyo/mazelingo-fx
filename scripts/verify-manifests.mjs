@@ -59,6 +59,11 @@ export function verifyFirefoxManifest(manifest) {
       !manifest.permissions.some((permission) => permission === "sidePanel"),
     "Firefox manifest must not request the sidePanel permission",
   );
+  const readerCommand = manifest.commands?.["reader-translate-page"];
+  assert(
+    readerCommand?.suggested_key?.default === "Ctrl+Shift+U",
+    "Firefox manifest must define the reader-translate-page shortcut",
+  );
   const geckoSettings = manifest.browser_specific_settings?.gecko;
   assert(
     typeof geckoSettings?.id === "string" && geckoSettings.id.length > 0,

@@ -22,6 +22,13 @@ type MessageListener = (
 const messageListener: MessageListener = (message, sender, sendResponse) =>
   handleMessage(message, sender, sendResponse);
 
+export function handleCommand(command: string, tab?: Readonly<{ id?: number }>): void {
+  if (command !== "reader-translate-page" || tab?.id === undefined) {
+    return;
+  }
+  void browser.tabs.sendMessage(tab.id, { type: "mlg:readerRun" }).catch(() => {});
+}
+
 export default defineBackground(() => {
   browser.runtime.onMessage.addListener(
     messageListener as (
@@ -35,5 +42,8 @@ export default defineBackground(() => {
   });
   browser.action.onClicked.addListener((tab: Readonly<{ id?: number }>) => {
     void openToolbarPanel(tab.id).catch(() => {});
+  });
+  browser.commands.onCommand.addListener((command, tab) => {
+    handleCommand(command, tab);
   });
 });
