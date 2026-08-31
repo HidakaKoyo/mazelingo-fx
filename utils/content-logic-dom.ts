@@ -251,7 +251,7 @@ export function isPageAllowed(
 export function hashString(input: string): number {
   let hash = 0;
   for (let index = 0; index < input.length; index += 1) {
-    hash = Math.trunc((hash << 5) - hash + (input.codePointAt(index) ?? 0));
+    hash = ((hash << 5) - hash + input.charCodeAt(index)) | 0; // oxlint-disable-line unicorn/prefer-code-point, unicorn/prefer-math-trunc
   }
   return Math.abs(hash);
 }

@@ -8,7 +8,6 @@ flowchart LR
   Page["Webページ"] <--> Content["コンテンツスクリプト\nDOM抽出、混在表示、対訳、TTS UI"]
   Content <--> BG["バックグラウンド処理\nRPC、LLM、キャッシュ、保存、TTS"]
   Panel["共通UI\nFirefox Sidebar、Chrome Side Panel"] <--> BG
-  Options["設定画面"] <--> Storage["browser.storage.local"]
   BG <--> Storage
   BG --> Providers["OpenAI、Anthropic、Gemini、\nOpenRouter、DeepSeek、GLM"]
   BG --> OpenAITTS["OpenAI TTS"]
@@ -24,7 +23,6 @@ WXTは各エントリーポイントを検出し、対象ブラウザ向けのma
 | `entrypoints/background.ts`、`entrypoints/background/` | 起動、メッセージ処理、設定、キャッシュ、語彙、TTS、ツールバー操作                |
 | `entrypoints/content/`                                 | DOM抽出、画面遷移の監視、翻訳適用、混在表示、対訳表示、クリック切り替え、TTS操作 |
 | `entrypoints/sidepanel/`                               | Firefox SidebarとChrome Side Panelで共有する操作UI                               |
-| `entrypoints/options/`                                 | モデル、APIキー、表示言語などの設定UI                                            |
 
 ## バックグラウンド処理
 

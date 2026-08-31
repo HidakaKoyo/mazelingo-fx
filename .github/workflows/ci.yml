@@ -16,11 +16,8 @@ jobs:
           node-version: 26
           cache: npm
 
-      - name: Install dependencies
+      - name: Install dependencies # postinstall runs `wxt prepare`
         run: npm ci
-
-      - name: Generate WXT types
-        run: npx wxt prepare
 
       - name: Typecheck
         run: npm run compile

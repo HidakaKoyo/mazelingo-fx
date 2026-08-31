@@ -15,5 +15,5 @@
     "types": ["wxt", "node"]
   },
   "include": ["**/*.ts", "**/*.d.ts"],
-  "exclude": ["node_modules", ".output", ".wxt", "dist", "oxlint.config.ts", "tools", "test"]
+  "exclude": ["node_modules", ".output", ".wxt", "dist", "oxlint.config.ts", "tools"]
 }

@@ -3,6 +3,7 @@ import path from "node:path";
 import type { BrowserContext, Page, Route } from "@playwright/test";
 
 const extPath = path.resolve(".output/chrome-mv3");
+const profileDir = path.resolve("test-results/e2e-profile");
 
 const isRequestBody = (value: unknown): value is { messages?: Array<{ content?: unknown }> } =>
   typeof value === "object" && value !== null;
@@ -19,7 +20,7 @@ const isIndexBlockList = (value: unknown): value is Array<{ i: number; html: str
  * LLM-provided translation.
  */
 async function launchExtension(): Promise<{ context: BrowserContext; page: Page }> {
-  const context = await chromium.launchPersistentContext("/tmp/opencode/e2e-e2e-profile", {
+  const context = await chromium.launchPersistentContext(profileDir, {
     args: [`--disable-extensions-except=${extPath}`, `--load-extension=${extPath}`],
     headless: false,
   });

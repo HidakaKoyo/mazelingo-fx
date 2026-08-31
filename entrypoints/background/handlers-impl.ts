@@ -214,14 +214,12 @@ export async function generateQuiz(
 }
 
 export async function translate(payload: TranslateInput): Promise<unknown> {
-  console.log("[mlg:bg] received mlg:translate", payload);
   try {
     const result = await translateBatch(payload, {
       cache,
       getConfig: loadConfig,
       llm: callLLMChain,
     });
-    console.log("[mlg:bg] translate success, blocks:", result.blocks?.length);
     return result;
   } catch (error) {
     const blockCount = Array.isArray(payload.htmlBlocks) ? payload.htmlBlocks.length : 0;

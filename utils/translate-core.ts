@@ -74,12 +74,10 @@ async function resplitLongUnit(
       sourcesRejoin: rejoin,
       unitCount: sentences?.length,
     });
-  } catch (error) {
-    console.warn("[mlg:bg] long-unit re-split failed; keeping original unit", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+  } catch {
+    console.warn("[mlg:bg] long-unit re-split failed; keeping original unit");
   }
-  return [{ source: unit.source, translation: unit.translation }];
+  return [unit];
 }
 
 export async function resplitBlock(
@@ -122,7 +120,6 @@ async function batchTranslate(
       TRANSLATION_SCHEMA,
     );
     const rawBlocks = isRecord(llmResult) ? llmResult.blocks : undefined;
-    console.log("[mlg:bg] LLM result:", llmResult);
     const reconciliation = reconcileIndexedBlocks(rawBlocks, fromIndices);
     for (const [index, block] of reconciliation.acceptedBlocks) {
       accepted.set(index, block);
@@ -198,7 +195,6 @@ async function retryOne(
 
 export async function translateUncached(
   blocks: ReadonlyArray<Readonly<IndexedBlock>>,
-  total: number,
   fromName: string,
   toName: string,
   deps: Readonly<TranslateDeps>,
@@ -206,11 +202,6 @@ export async function translateUncached(
 ): Promise<ReadonlyArray<ReadonlyTranslationBlock | null>> {
   const expected = blocks.map((_, index) => index);
   const indexedBlocks = blocks.map((htmlBlock, i) => ({ html: htmlBlock.html, i }));
-  console.log(
-    "[mlg:bg] calling LLM chain with models:",
-    config.models,
-    `(${blocks.length} uncached of ${total})`,
-  );
   const outcome = await batchTranslate(indexedBlocks, expected, fromName, toName, deps, config);
   const retried = await Promise.all(
     outcome.missing.map((index) => retryOne(index, indexedBlocks, fromName, toName, deps, config)),

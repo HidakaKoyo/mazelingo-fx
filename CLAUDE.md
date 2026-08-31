@@ -10,14 +10,15 @@ Chrome Web Store: https://chromewebstore.google.com/detail/mazelingo/bhdngeocoko
 npm install        # 依存: wxt, typescript, vitest, playwright (devDependencies)
 npm run dev        # wxt (HMR付き開発サーバー)
 npm run build      # wxt build → .output/chrome-mv3/ 生成
+npm run build:local # 同上 + 直下へミラー。chrome://extensions で直下を読み込んでいる既存項目の「再読み込み」で反映(拡張IDと chrome.storage を維持)
 npm run zip        # wxt zip → mazelingo.zip (Chrome Web Store配布用)
 npm run compile    # tsc --noEmit (型チェック)
 npm test           # vitest (ユニット/純ロジック + jsdom DOMテスト)
 npm run test:e2e   # playwright (ビルド済み拡張を実ブラウザでE2E)
 ```
 
-- フレームワーク不使用の TypeScript (strict)。WXT がエントリをバンドルし `.output/` に出力
-- `test/` に LLM モデル動作検証スクリプト (test_llm.js, test_models.js, test_deepl.js)。ライブAPI要のため CI 対象外。`.env` にAPIキーを置いて実行(`.env.example` 参照)
+- UIフレームワーク不使用のTypeScript(strict)。ビルドはWXT(エントリをバンドルし`.output/`に出力)
+- `test/` に LLM モデル動作検証スクリプト (test_llm.ts, test_models.js, test_deepl.js)。ライブAPI要のため CI 対象外。`.env` にAPIキーを置いて実行(`.env.example` 参照)。`npm run test:llm -- <model> <api-key>`は本体の`utils/llm.ts`経由で1回翻訳する
 
 ## 構造
 
@@ -25,7 +26,6 @@ npm run test:e2e   # playwright (ビルド済み拡張を実ブラウザでE2E)
 - `entrypoints/background.ts` — service worker。翻訳バッチ・2層キャッシュ・長ユニット再分割
 - `entrypoints/content/index.ts` + `style.css` — ページ注入(リーフブロック検出・改行境界での断片化)・翻訳表示UI(トグル/ツールチップ)
 - `entrypoints/sidepanel/` — サイドパネルUI(設定/出力タブ、最大規模ファイル)
-- `entrypoints/options/` — 設定ページ
 - `utils/llm.ts` — OpenAI / Anthropic / Gemini / GLM / DeepSeek / OpenRouter のリクエストビルダーと呼び分け (callLLMChain)
 - `utils/config.ts` — デフォルト設定とマージ処理
 - `utils/translation.ts` / `utils/content-logic.ts` / `utils/dom-overlay.ts` — 純粋ロジック(テスト対象の seam)
