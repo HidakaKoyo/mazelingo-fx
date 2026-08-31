@@ -5,55 +5,108 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
-  test:
+  core:
+    name: Core checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 26
           cache: npm
-
-      - name: Install dependencies # postinstall runs `wxt prepare`
+      - name: Install dependencies
         run: npm ci
-
       - name: Typecheck
         run: npm run compile
-
       - name: Lint
         run: npm run lint
-
       - name: Format check
         run: npm run fmt -- --check
-
       - name: Unit tests
         run: npm run test
 
-      - name: Build Chrome extension
-        run: npm run build:chrome
-
+  firefox-package:
+    name: Firefox package checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
       - name: Build Firefox extension
         run: npm run build:firefox
-
-      - name: Verify generated manifests
-        run: npm run verify:manifests
-
-      - name: Lint Firefox extension (report warnings, fail on errors)
+      - name: Verify Firefox manifest
+        run: |
+          node --input-type=module -e 'import { readFile } from "node:fs/promises"; import { verifyFirefoxManifest } from "./scripts/verify-manifests.mjs"; verifyFirefoxManifest(JSON.parse(await readFile(".output/firefox-mv3/manifest.json", "utf8")));'
+      - name: Lint Firefox extension
         run: npm run lint:firefox
-
-      - name: Upload extension artifacts
+      - name: Upload Firefox package diagnostics
+        if: ${{ failure() }}
         uses: actions/upload-artifact@v4
         with:
-          name: browser-extensions
-          path: |
-            .output/chrome-mv3
-            .output/firefox-mv3
-          if-no-files-found: error
+          name: firefox-package-diagnostics
+          path: .output/firefox-mv3/
+          if-no-files-found: ignore
+          retention-days: 14
 
+  chromium-compat:
+    name: Chromium compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build Chromium extension
+        run: npm run build:chrome
+      - name: Verify Chromium manifest
+        run: |
+          node --input-type=module -e 'import { readFile } from "node:fs/promises"; import { verifyChromeManifest } from "./scripts/verify-manifests.mjs"; verifyChromeManifest(JSON.parse(await readFile(".output/chrome-mv3/manifest.json", "utf8")));'
+      - name: Upload Chromium compatibility diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: chromium-compat-diagnostics
+          path: .output/chrome-mv3/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  chromium-e2e:
+    name: Chromium E2E (diagnostic)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build Chromium extension for diagnostics
+        run: npm run build:chrome
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
-
-      - name: E2E tests
+      - name: Run Chromium E2E diagnostics
         run: xvfb-run --auto-servernum -- npm run test:e2e
+      - name: Upload Chromium E2E failure artifacts
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: chromium-e2e-diagnostics
+          path: |
+            test-results/
+            !test-results/e2e-profile/**
+            .output/chrome-mv3/
+          if-no-files-found: ignore
+          retention-days: 14

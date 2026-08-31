@@ -75,6 +75,7 @@ export default defineConfig({
     };
   },
   zip: {
+    excludeSources: ["test-results/**", "playwright-report/**"],
     name: "mazelingo-fx",
   },
 });

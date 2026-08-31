@@ -1,0 +1,84 @@
+name: Upstream watch
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 2 * * 1"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    name: Report upstream changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+      - name: Fetch and summarize configured upstream
+        id: upstream
+        run: npm run check:upstream -- --fetch
+      - name: Maintain the upstream review issue
+        uses: actions/github-script@v9
+        env:
+          COMMITS_PENDING_REVIEW: ${{ steps.upstream.outputs.commits_pending_review }}
+          HAS_PENDING_REVIEW: ${{ steps.upstream.outputs.has_pending_review }}
+          LAST_REVIEWED_COMMIT: ${{ steps.upstream.outputs.last_reviewed_commit }}
+          LATEST_COMMIT: ${{ steps.upstream.outputs.latest_commit }}
+          UPSTREAM_REPOSITORY: ${{ steps.upstream.outputs.upstream_repository }}
+        with:
+          script: |
+            const title = `Upstream review: ${process.env.UPSTREAM_REPOSITORY}`;
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              per_page: 100,
+            });
+            const existing = issues.find(
+              (issue) => issue.title === title && !issue.pull_request,
+            );
+
+            if (process.env.HAS_PENDING_REVIEW === "true") {
+              const body = [
+                "## Upstream review required",
+                "",
+                `- Upstream: \`${process.env.UPSTREAM_REPOSITORY}\``,
+                `- Last reviewed: \`${process.env.LAST_REVIEWED_COMMIT}\``,
+                `- Current: \`${process.env.LATEST_COMMIT}\``,
+                `- Commits pending review: **${process.env.COMMITS_PENDING_REVIEW}**`,
+                "",
+                "Create a `sync/yeq6x-YYYYMMDD` branch and follow `docs/UPSTREAM.md`. Do not use GitHub fork sync or an automatic merge.",
+                "",
+                "_This issue is maintained by the Upstream watch workflow._",
+              ].join("\n");
+              if (existing) {
+                if (existing.body !== body) {
+                  await github.rest.issues.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: existing.number,
+                    body,
+                  });
+                }
+              } else {
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title,
+                  body,
+                });
+              }
+            } else if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                state: "closed",
+              });
+            }

@@ -14,7 +14,7 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox --mv3",
     "compile": "tsc --noEmit",
-    "test": "vitest run && node --test scripts/verify-manifests.test.mjs",
+    "test": "vitest run && node --test scripts/verify-manifests.test.mjs scripts/check-upstream.test.mjs",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:models": "node test/test_models.js",
@@ -24,6 +24,7 @@
     "lint:fix": "oxlint --fix",
     "fmt": "oxfmt",
     "verify:manifests": "node scripts/verify-manifests.mjs",
+    "check:upstream": "node scripts/check-upstream.mjs",
     "postinstall": "wxt prepare"
   },
   "devDependencies": {
