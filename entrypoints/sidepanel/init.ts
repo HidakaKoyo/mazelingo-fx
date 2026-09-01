@@ -17,20 +17,25 @@ import {
 import { refreshModelCatalogRpc } from "./rpc";
 
 type CatalogProviderId = NonNullable<Parameters<typeof refreshModelCatalogRpc>[0]>[number];
+let latestModelCatalogRequest = 0;
 
 async function refreshModelCatalog(
   saveFirst: boolean,
   requestedProviders?: readonly CatalogProviderId[],
 ): Promise<void> {
+  let requestGeneration: number | null = null;
   try {
     if (saveFirst) {
       const saveResult = await saveConfig();
       if (!saveResult.saved) return;
     }
+    requestGeneration = ++latestModelCatalogRequest;
     setModelCatalogLoading();
     const result = await refreshModelCatalogRpc(requestedProviders);
+    if (requestGeneration !== latestModelCatalogRequest) return;
     applyModelCatalogResult(result ?? { models: [], providers: [], status: "failed" });
   } catch {
+    if (requestGeneration !== null && requestGeneration !== latestModelCatalogRequest) return;
     applyModelCatalogResult({ models: [], providers: [], status: "failed" });
   }
 }

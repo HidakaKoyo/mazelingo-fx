@@ -500,6 +500,10 @@ function syncPendingApiKeyProvider(
 
 function updateApiKeyHint(value: string, hint: HTMLElement, selectedProvider: string): void {
   const t = getTranslations();
+  if (selectedProvider === OTHER_API_KEY_PROVIDER) {
+    hint.textContent = t.apiKeyProviderOtherHint;
+    return;
+  }
   if (value.trim() === "") {
     hint.textContent = "";
     return;
@@ -545,6 +549,15 @@ export function hasUnconfirmedApiKey(): boolean {
     if (input.value.trim() === "") return false;
     return input.dataset.prefix === "";
   });
+}
+
+export function getApiKeySaveValidationMessage(): string {
+  const providerSelect = elements.apiKeysSection.querySelector<HTMLSelectElement>(
+    "select[data-api-key-provider]",
+  );
+  return providerSelect?.value === OTHER_API_KEY_PROVIDER
+    ? getTranslations().apiKeyProviderOtherHint
+    : getTranslations().apiKeyProviderRequired;
 }
 
 export function refreshApiKeyFieldTranslations(): void {

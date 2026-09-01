@@ -13,6 +13,8 @@ export const translations = {
     apiKeyInputPlaceholder: "Paste an API key",
     apiKeyLabelSuffix: "API key",
     apiKeyProviderOther: "Other / Custom",
+    apiKeyProviderOtherHint:
+      "Other / Custom does not save or send this key. Select a supported provider, then choose Custom… under Model chain and enter that provider's model ID. Unsupported endpoints are not available.",
     apiKeyProviderRequired: "Select a supported provider before saving this API key.",
     apiKeyProviderSelect: "Select provider",
     cacheClear: "Clear cache",
@@ -148,6 +150,8 @@ export const translations = {
     apiKeyInputPlaceholder: "APIキーを貼り付け",
     apiKeyLabelSuffix: "APIキー",
     apiKeyProviderOther: "その他 / カスタム",
+    apiKeyProviderOtherHint:
+      "その他 / カスタムでは、このキーを保存・送信しません。対応済みproviderを選び、モデルチェーンの「カスタム…」でそのproviderのモデルIDを手入力してください。未対応endpointには接続できません",
     apiKeyProviderRequired: "このAPIキーを保存するには、対応済みproviderを選択してください",
     apiKeyProviderSelect: "providerを選択",
     cacheClear: "キャッシュを削除",

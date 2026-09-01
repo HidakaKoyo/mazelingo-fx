@@ -4,7 +4,12 @@ import { DEFAULT_CONFIG, mergeConfig } from "@/utils/config";
 import { STORAGE_KEY } from "@/utils/keys";
 import { elements } from "./el";
 import { selectedTtsVoice } from "./util";
-import { collectApiKeys, getSelectedModels, hasUnconfirmedApiKey } from "./model";
+import {
+  collectApiKeys,
+  getApiKeySaveValidationMessage,
+  getSelectedModels,
+  hasUnconfirmedApiKey,
+} from "./model";
 import { getTranslations } from "./translations";
 import { SAVE_ANIMATION_DURATION_MS, SAVE_ANIMATION_INTERVAL_MS } from "./constants";
 import { formatBytes, stableStringify, type DeepReadonly } from "./util";
@@ -120,7 +125,7 @@ export async function loadConfig(): Promise<Config> {
 
 export async function saveConfig(): Promise<SaveConfigResult> {
   if (hasUnconfirmedApiKey()) {
-    elements.modelCatalogStatus.textContent = getTranslations().apiKeyProviderRequired;
+    elements.modelCatalogStatus.textContent = getApiKeySaveValidationMessage();
     return { changedCatalogProviders: [], saved: false };
   }
   const state = collectFormState();
