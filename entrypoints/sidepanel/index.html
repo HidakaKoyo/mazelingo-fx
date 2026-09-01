@@ -363,6 +363,15 @@
         font-size: 11px;
         font-weight: 700;
       }
+      .model-picker-provider-label {
+        display: block;
+        margin-top: 4px;
+        padding: 4px 8px 2px;
+        border-top: 1px solid #f3f4f6;
+        color: #374151;
+        font-size: 11px;
+        font-weight: 700;
+      }
       .model-picker-option {
         display: block;
         width: 100%;
@@ -455,6 +464,18 @@
       }
       .api-key-row .api-key-toggle:hover {
         background: #e5e7eb;
+      }
+      .api-key-add-row {
+        padding-top: 10px;
+        border-top: 1px solid #f3f4f6;
+      }
+      .api-key-provider-select {
+        margin-bottom: 8px;
+      }
+      .api-key-hint {
+        min-height: 15px;
+        margin-top: 4px;
+        color: #6b7280;
       }
       .page-list-card {
         background: #f9fafb;
@@ -1798,7 +1819,7 @@
             <div class="section">
               <label class="label" id="modelsLabel">モデルチェーン</label>
               <div class="hint" style="margin-bottom: 8px; margin-top: 0" id="modelsHint">
-                保存済みのOpenRouterキーを使い、構造化翻訳対応の候補だけを表示します
+                保存済みのproviderキーを使い、取得できたモデル候補をprovider別に表示します
               </div>
               <div class="model-chain">
                 <div class="model-chain-row">

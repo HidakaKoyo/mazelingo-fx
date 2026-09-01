@@ -57,7 +57,7 @@ function dispatch(message: MlgMessage, sender: Sender): Promise<unknown> | undef
     case "mlg:getConfig":
       return loadConfig();
     case "mlg:refreshModelCatalog":
-      return refreshModelCatalog();
+      return refreshModelCatalog(message.payload?.providers);
     case "mlg:setConfig":
       return setConfig(message.payload);
     case "mlg:getCacheStats":

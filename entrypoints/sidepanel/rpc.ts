@@ -1,4 +1,5 @@
 import { browser } from "wxt/browser";
+import { isCatalogProviderId, type CatalogProviderId } from "@/utils/model-catalog";
 import type {
   ExplanationResult,
   FeedbackResult,
@@ -83,7 +84,29 @@ function isModelCatalogResponse(x: unknown): x is ModelCatalogResponse {
     return false;
   }
   const models: unknown = x.models;
-  return Array.isArray(models) && models.every((model) => isModelCatalogEntry(model));
+  if (!Array.isArray(models) || !models.every((model) => isModelCatalogEntry(model))) {
+    return false;
+  }
+  if (!("providers" in x)) return false;
+  const providers: unknown = x.providers;
+  return (
+    Array.isArray(providers) &&
+    providers.every((provider) => isModelCatalogProviderResult(provider))
+  );
+}
+
+function isModelCatalogProviderResult(x: unknown): boolean {
+  if (typeof x !== "object" || x === null) return false;
+  if (!("provider" in x) || !("status" in x) || !("models" in x)) return false;
+  if (!isCatalogProviderId(x.provider)) return false;
+  if (x.status !== "ready" && x.status !== "not-configured" && x.status !== "failed") {
+    return false;
+  }
+  return Array.isArray(x.models) && x.models.every((model) => isModelCatalogEntry(model));
+}
+
+function isCatalogProviderIdArray(value: unknown): value is readonly CatalogProviderId[] {
+  return Array.isArray(value) && value.every((provider) => isCatalogProviderId(provider));
 }
 
 export async function generateQuiz(situation: string): Promise<QuizResponse | undefined> {
@@ -169,8 +192,15 @@ export async function clearCacheRpc(): Promise<void> {
   await browser.runtime.sendMessage({ type: "mlg:clearCache" });
 }
 
-export async function refreshModelCatalogRpc(): Promise<ModelCatalogResponse | undefined> {
-  const res: unknown = await browser.runtime.sendMessage({ type: "mlg:refreshModelCatalog" });
+export async function refreshModelCatalogRpc(
+  providers?: readonly CatalogProviderId[],
+): Promise<ModelCatalogResponse | undefined> {
+  if (providers !== undefined && !isCatalogProviderIdArray(providers)) return undefined;
+  const payload = providers === undefined ? undefined : { providers };
+  const res: unknown = await browser.runtime.sendMessage({
+    ...(payload === undefined ? {} : { payload }),
+    type: "mlg:refreshModelCatalog",
+  });
   return isModelCatalogResponse(res) ? res : undefined;
 }
 

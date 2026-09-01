@@ -1,3 +1,5 @@
+import type { CatalogProviderId, CatalogStatus } from "./model-catalog";
+
 /**
  * Typed message protocol shared across the three extension contexts:
  * background, content script, and the side panel.
@@ -198,9 +200,20 @@ export interface ModelCatalogEntry {
   name: string;
 }
 
-export interface ModelCatalogResponse {
-  status: "ready" | "not-configured" | "failed";
+export interface ModelCatalogProviderResult {
+  provider: CatalogProviderId;
+  status: CatalogStatus;
   models: readonly ModelCatalogEntry[];
+}
+
+export interface ModelCatalogResponse {
+  status: CatalogStatus;
+  models: readonly ModelCatalogEntry[];
+  providers: readonly ModelCatalogProviderResult[];
+}
+
+export interface RefreshModelCatalogPayload {
+  providers?: readonly CatalogProviderId[];
 }
 
 /**
@@ -210,7 +223,7 @@ export interface ModelCatalogResponse {
 export type MlgMessage =
   | { type: "mlg:readerRun"; payload?: undefined }
   | { type: "mlg:getConfig"; payload?: undefined }
-  | { type: "mlg:refreshModelCatalog"; payload?: undefined }
+  | { type: "mlg:refreshModelCatalog"; payload?: RefreshModelCatalogPayload }
   | { type: "mlg:setConfig"; payload: SetConfigPayload }
   | { type: "mlg:getCacheStats"; payload?: undefined }
   | { type: "mlg:clearCache"; payload?: undefined }

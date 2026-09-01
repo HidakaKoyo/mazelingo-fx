@@ -1,30 +1,61 @@
 import { elements } from "./el";
 import { setCurrentLanguage } from "./translations";
 import { loadLanguage, setLanguage } from "./language";
-import { loadConfig, saveConfig } from "./config";
+import { loadConfig, saveConfig, updateDirtyState } from "./config";
 import { initSettingsModule } from "./init-settings";
 import { initOutputTab } from "./init-output";
 import { initMessages, initPendingExplanation } from "./init-messages";
 import { initMyExamples, initVocab } from "./init-vocab";
-import { applyModelCatalogResult, setModelCatalogLoading } from "./model";
+import {
+  applyModelCatalogResult,
+  collectApiKeys,
+  hasConfiguredCatalogProviderKey,
+  getSelectedModels,
+  renderApiKeyFields,
+  setModelCatalogLoading,
+} from "./model";
 import { refreshModelCatalogRpc } from "./rpc";
 
-async function refreshModelCatalog(saveFirst: boolean): Promise<void> {
-  setModelCatalogLoading();
+type CatalogProviderId = NonNullable<Parameters<typeof refreshModelCatalogRpc>[0]>[number];
+let latestModelCatalogRequest = 0;
+
+async function refreshModelCatalog(
+  saveFirst: boolean,
+  requestedProviders?: readonly CatalogProviderId[],
+): Promise<void> {
+  let requestGeneration: number | null = null;
   try {
     if (saveFirst) {
-      await saveConfig();
+      const saveResult = await saveConfig();
+      if (!saveResult.saved) return;
     }
-    const result = await refreshModelCatalogRpc();
-    applyModelCatalogResult(result ?? { models: [], status: "failed" });
+    requestGeneration = ++latestModelCatalogRequest;
+    setModelCatalogLoading();
+    const result = await refreshModelCatalogRpc(requestedProviders);
+    if (requestGeneration !== latestModelCatalogRequest) return;
+    applyModelCatalogResult(result ?? { models: [], providers: [], status: "failed" });
   } catch {
-    applyModelCatalogResult({ models: [], status: "failed" });
+    if (requestGeneration !== null && requestGeneration !== latestModelCatalogRequest) return;
+    applyModelCatalogResult({ models: [], providers: [], status: "failed" });
+  }
+}
+
+async function saveAndRefreshModelCatalog(): Promise<void> {
+  try {
+    const saveResult = await saveConfig();
+    if (!saveResult.saved) return;
+    renderApiKeyFields(getSelectedModels(), collectApiKeys(), updateDirtyState);
+    if (saveResult.changedCatalogProviders.length > 0) {
+      await refreshModelCatalog(false, saveResult.changedCatalogProviders);
+    }
+  } catch {
+    applyModelCatalogResult({ models: [], providers: [], status: "failed" });
   }
 }
 
 function initSaveAndLang(): void {
   elements.save.addEventListener("click", () => {
-    void saveConfig();
+    void saveAndRefreshModelCatalog();
   });
   elements.modelCatalogRefresh.addEventListener("click", () => {
     void refreshModelCatalog(true);
@@ -47,7 +78,7 @@ export async function init(): Promise<void> {
   initMyExamples();
   initSaveAndLang();
   await initPendingExplanation();
-  if ((config.apiKeys.openrouter ?? "").trim() !== "") {
+  if (hasConfiguredCatalogProviderKey(config.apiKeys)) {
     void refreshModelCatalog(false);
   }
 }

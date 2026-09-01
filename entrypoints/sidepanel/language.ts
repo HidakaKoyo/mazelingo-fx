@@ -1,7 +1,7 @@
 import { browser } from "wxt/browser";
 import { UI_LANGUAGE_KEY } from "@/utils/keys";
 import { elements } from "./el";
-import { populateModelSelects } from "./model";
+import { populateModelSelects, refreshApiKeyFieldTranslations } from "./model";
 import { updateRatioLabel, setDefaultSaveLabel } from "./config";
 import { getTranslations, setCurrentLanguage, getCurrentLanguage } from "./translations";
 import { getCurrentOutputMode } from "./output";
@@ -91,5 +91,6 @@ export function applyLanguage(): void {
   setDefaultSaveLabel(getTranslations().save);
   elements.save.textContent = getTranslations().save;
   populateModelSelects();
+  refreshApiKeyFieldTranslations();
   updateRatioLabel();
 }

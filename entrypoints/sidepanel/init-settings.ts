@@ -13,9 +13,7 @@ import {
   updateRatioLabel,
 } from "./config";
 import {
-  collectApiKeys,
   getModelControls,
-  getSelectedModels,
   renderApiKeyFields,
   setModelValues,
   syncCustomModelControl,
@@ -24,7 +22,6 @@ import {
 import { addCurrentSiteTo } from "./init-output";
 
 function onModelChange(): void {
-  renderApiKeyFields(getSelectedModels(), collectApiKeys(), updateDirtyState);
   updateDirtyState();
 }
 
