@@ -4,16 +4,22 @@ import { DEFAULT_CONFIG, mergeConfig } from "@/utils/config";
 import { STORAGE_KEY } from "@/utils/keys";
 import { elements } from "./el";
 import { selectedTtsVoice } from "./util";
-import { collectApiKeys, getSelectedModels } from "./model";
+import { collectApiKeys, getSelectedModels, hasUnconfirmedApiKey } from "./model";
 import { getTranslations } from "./translations";
 import { SAVE_ANIMATION_DURATION_MS, SAVE_ANIMATION_INTERVAL_MS } from "./constants";
 import { formatBytes, stableStringify, type DeepReadonly } from "./util";
 import { clearCacheRpc, getCacheStatsRpc } from "./rpc";
+import { getChangedCatalogProviders, type CatalogProviderId } from "./model-catalog-refresh";
 
 let defaultSaveLabel = "";
 let savedState: DeepReadonly<Config> | null = null;
 let shakeIntervalId: ReturnType<typeof setInterval> | null = null;
 let shakeTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+export interface SaveConfigResult {
+  readonly saved: boolean;
+  readonly changedCatalogProviders: readonly CatalogProviderId[];
+}
 
 export function setDefaultSaveLabel(label: string): void {
   defaultSaveLabel = label;
@@ -112,14 +118,21 @@ export async function loadConfig(): Promise<Config> {
   return mergeConfig(isConfig(raw) ? raw : undefined);
 }
 
-export async function saveConfig(): Promise<void> {
-  await browser.storage.local.set({ [STORAGE_KEY]: collectFormState() });
-  setSavedState(collectFormState());
+export async function saveConfig(): Promise<SaveConfigResult> {
+  if (hasUnconfirmedApiKey()) {
+    elements.modelCatalogStatus.textContent = getTranslations().apiKeyProviderRequired;
+    return { changedCatalogProviders: [], saved: false };
+  }
+  const state = collectFormState();
+  const changedCatalogProviders = getChangedCatalogProviders(savedState, state);
+  await browser.storage.local.set({ [STORAGE_KEY]: state });
+  setSavedState(state);
   const t = getTranslations();
   elements.save.textContent = t.saved;
   setTimeout(() => {
     elements.save.textContent = getDefaultSaveLabel();
   }, 1200);
+  return { changedCatalogProviders, saved: true };
 }
 
 export async function refreshCacheStats(): Promise<void> {

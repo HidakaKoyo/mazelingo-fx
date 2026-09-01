@@ -7,7 +7,7 @@ import {
   buildVocabAnalysisMessages,
 } from "@/utils/prompts";
 import { callLLMChain } from "@/utils/llm";
-import { discoverOpenRouterModels } from "@/utils/model-catalog";
+import { discoverModelCatalog, type CatalogProviderId } from "@/utils/model-catalog";
 import { openExplanationSidePanel } from "@/utils/browser-actions";
 import { translateBatch } from "@/utils/translate";
 import {
@@ -74,12 +74,18 @@ export async function clearPendingExplanation(): Promise<{ ok: true }> {
   return { ok: true };
 }
 
-export async function refreshModelCatalog(): Promise<ModelCatalogResponse> {
+export async function refreshModelCatalog(
+  requestedProviders?: readonly CatalogProviderId[],
+): Promise<ModelCatalogResponse> {
   try {
     const config = await loadConfig();
-    return await discoverOpenRouterModels(config.apiKeys.openrouter ?? "");
+    return await discoverModelCatalog(config.apiKeys, requestedProviders);
   } catch {
-    return { models: [], status: "failed" };
+    return {
+      models: [],
+      providers: [],
+      status: "failed",
+    };
   }
 }
 

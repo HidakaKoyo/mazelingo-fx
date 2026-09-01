@@ -4,6 +4,17 @@ export const translations = {
   en: {
     addCurrentSite: "Add this site",
     alternativeTitle: "Other perspectives you could write from",
+    apiKeyAdd: "Add API key",
+    apiKeyHintDetected: (provider: string): string =>
+      `This looks like a ${provider} key. Confirm the destination before saving.`,
+    apiKeyHintMismatch: (detected: string, selected: string): string =>
+      `This looks like a ${detected} key, but ${selected} is selected. Confirm before saving.`,
+    apiKeyHintUnknown: "The key format could not be identified. Select the provider before saving.",
+    apiKeyInputPlaceholder: "Paste an API key",
+    apiKeyLabelSuffix: "API key",
+    apiKeyProviderOther: "Other / Custom",
+    apiKeyProviderRequired: "Select a supported provider before saving this API key.",
+    apiKeyProviderSelect: "Select provider",
     cacheClear: "Clear cache",
     cacheCleared: "Cleared",
     cacheHint:
@@ -64,15 +75,20 @@ export const translations = {
     modalYoutube: "YouTube",
     customModel: "Custom…",
     models: "Model chain",
-    modelCatalogFailed: "Could not get model candidates. Check your OpenRouter key and settings.",
+    modelCatalogFailed:
+      "Could not get model candidates. Check the saved provider keys and settings.",
     modelCatalogLoading: "Updating candidates…",
-    modelCatalogNotConfigured: "Save an OpenRouter API key, then update the candidates.",
+    modelCatalogNotConfigured: "Save a provider API key, then update the candidates.",
     modelCatalogOtherVendor: "Other OpenRouter models",
-    modelCatalogReady: (count: number): string => `${count} structured-translation candidates`,
+    modelCatalogProviderFailed: (provider: string): string =>
+      `${provider}: could not get candidates`,
+    modelCatalogProviderReady: (provider: string, count: number): string =>
+      `${provider}: ${count} model candidates`,
     modelCatalogRefresh: "Update model candidates",
     modelCatalogFixedModels: "Fixed models",
     modelNone: "(none)",
-    modelsHint: "Uses the saved OpenRouter key. Only structured-translation candidates are listed.",
+    modelsHint:
+      "Uses saved provider keys and shows available model candidates by provider. Availability does not guarantee translation success.",
     outputEmptyDesc: "Click the pencil button on a paragraph to open it here",
     outputEmptyTitle: "Select a paragraph",
     outputFeedbackLabel: "Feedback",
@@ -123,6 +139,17 @@ export const translations = {
   ja: {
     addCurrentSite: "このサイトを追加",
     alternativeTitle: "こんな視点でも書けます",
+    apiKeyAdd: "APIキーを追加",
+    apiKeyHintDetected: (provider: string): string =>
+      `${provider}のキーらしい形式です。保存前に送信先を確認してください`,
+    apiKeyHintMismatch: (detected: string, selected: string): string =>
+      `${detected}のキーらしい形式ですが、選択中は${selected}です。内容を確認して保存してください`,
+    apiKeyHintUnknown: "キー形式を判定できません。保存前にproviderを選択してください",
+    apiKeyInputPlaceholder: "APIキーを貼り付け",
+    apiKeyLabelSuffix: "APIキー",
+    apiKeyProviderOther: "その他 / カスタム",
+    apiKeyProviderRequired: "このAPIキーを保存するには、対応済みproviderを選択してください",
+    apiKeyProviderSelect: "providerを選択",
     cacheClear: "キャッシュを削除",
     cacheCleared: "削除しました",
     cacheHint: "翻訳結果を7日間保存して再翻訳を省きます。溜まると動作が重くなることがあります",
@@ -182,15 +209,20 @@ export const translations = {
     modalYoutube: "YouTube",
     customModel: "カスタム…",
     models: "モデルチェーン",
-    modelCatalogFailed: "候補を取得できませんでした。OpenRouter のAPIキーと設定を確認してください",
+    modelCatalogFailed:
+      "候補を取得できませんでした。保存済みのproviderキーと設定を確認してください",
     modelCatalogLoading: "候補を更新中…",
-    modelCatalogNotConfigured: "OpenRouter APIキーを保存してから候補を更新してください",
+    modelCatalogNotConfigured: "providerのAPIキーを保存してから候補を更新してください",
     modelCatalogOtherVendor: "その他のOpenRouterモデル",
-    modelCatalogReady: (count: number): string => `構造化翻訳対応の候補 ${count} 件`,
+    modelCatalogProviderFailed: (provider: string): string =>
+      `${provider}：候補を取得できませんでした`,
+    modelCatalogProviderReady: (provider: string, count: number): string =>
+      `${provider}：候補 ${count} 件`,
     modelCatalogRefresh: "モデル候補を更新",
     modelCatalogFixedModels: "固定モデル",
     modelNone: "（なし）",
-    modelsHint: "保存済みのOpenRouterキーを使い、構造化翻訳対応の候補だけを表示します",
+    modelsHint:
+      "保存済みのproviderキーを使い、取得できたモデル候補をprovider別に表示します。候補取得は翻訳成功を保証しません",
     outputEmptyTitle: "パラグラフを選択してください",
     outputEmptyDesc: "ページ上の段落の鉛筆ボタンを押すと、ここで開きます",
     outputFeedbackLabel: "フィードバック",
