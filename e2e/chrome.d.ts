@@ -11,7 +11,9 @@ declare const chrome: {
     };
   };
   runtime: {
+    lastError?: { message?: string };
     sendMessage(msg: unknown): Promise<unknown>;
+    sendMessage(msg: unknown, callback: (response: unknown) => void): void;
     getURL(path: string): string;
   };
   tabs: {

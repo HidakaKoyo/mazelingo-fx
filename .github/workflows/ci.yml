@@ -80,33 +80,3 @@ jobs:
           path: .output/chrome-mv3/
           if-no-files-found: ignore
           retention-days: 14
-
-  chromium-e2e:
-    name: Chromium E2E (diagnostic)
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 26
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Build Chromium extension for diagnostics
-        run: npm run build:chrome
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-      - name: Run Chromium E2E diagnostics
-        run: xvfb-run --auto-servernum -- npm run test:e2e
-      - name: Upload Chromium E2E failure artifacts
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: chromium-e2e-diagnostics
-          path: |
-            test-results/
-            !test-results/e2e-profile/**
-            .output/chrome-mv3/
-          if-no-files-found: ignore
-          retention-days: 14

@@ -7,7 +7,6 @@ Pull Requestと`main`へのpushでは、GitHub Actionsが次を実行します�
 - **Core checks**：型検査、lint、書式、単体テスト、manifest検査のテスト
 - **Firefox package checks**：Firefox build、Firefox manifest検査、`web-ext lint`
 - **Chromium compatibility**：Chromium buildとChromium manifest検査。Firefox固有の分岐が共通処理へ混入していないことを確認するための検査で、配布・サポートの保証ではない
-- **Chromium E2E (diagnostic)**：Playwrightによる診断。失敗してもFirefox向け品質ゲートは停止しないが、`test-results`とChromium生成物を14日間artifactとして残す
 
 Firefoxの実ブラウザ操作、署名済みXPIの再起動後の確認、実際の外部プロバイダーとの通信はCIで代替しません。Firefoxリリースでは後述の手動確認と[リリース手順](RELEASING.md)が必要です。
 
@@ -26,10 +25,15 @@ npm run build:firefox
 npm run lint:firefox
 npm run build:chrome
 npm run verify:manifests
-npm run test:e2e
 ```
 
-`npm run test:e2e`は現在Chromiumを中心に実行します。失敗時は`test-results/`を確認し、Firefoxの不具合と断定せず、Chromium互換性の診断結果としてIssueまたはPRへ記録してください。
+## Chromium E2E診断
+
+`npm run test:e2e`はCIから外したローカル診断です。Firefoxリリースの必須条件でも、Chromium compatibility検査の代替でもありません。
+
+2026-09-02時点では、Playwright persistent-context harnessでextension pageからMV3 backgroundへのruntime message応答を観測できず、mock request・content script応答・DOM反映の段階へ進みません。テストは設定の保存、Service Workerからの設定read-back、runtime message、mock hit、外部通信遮断、DOM翻訳属性をこの順に検査し、最初に失敗した段階を示します。固定sleepは使わず、profileは実行ごとに一意に作成して終了時に削除します。
+
+実APIキー・実プロバイダー通信は使いません。OpenAI hostの名前解決を失敗させ、許可外HTTPS requestをabortします。`context.route`がMV3 Service Worker由来のfetchを捕捉できないとは確認されていないため、production用test hookは追加していません。経緯、Firefox品質ゲートとの関係、再導入条件は[Issue #9](https://github.com/HidakaKoyo/mazelingo-fx/issues/9)を正本とします。
 
 ## 2026年8月23日のFirefox簡易確認
 
