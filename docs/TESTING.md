@@ -33,7 +33,7 @@ npm run verify:manifests
 
 2026-09-02時点では、Playwright persistent-context harnessでextension pageからMV3 backgroundへのruntime message応答を観測できず、mock request・content script応答・DOM反映の段階へ進みません。テストは設定の保存、Service Workerからの設定read-back、runtime message、mock hit、外部通信遮断、DOM翻訳属性をこの順に検査し、最初に失敗した段階を示します。固定sleepは使わず、profileは実行ごとに一意に作成して終了時に削除します。
 
-実APIキー・実プロバイダー通信は使いません。OpenAI hostの名前解決を失敗させ、許可外HTTPS requestをabortします。`context.route`がMV3 Service Worker由来のfetchを捕捉できないとは確認されていないため、production用test hookは追加していません。経緯、Firefox品質ゲートとの関係、再導入条件は[Issue #2](https://github.com/Yeq6X/mazelingo/issues/2)を正本とします。
+実APIキー・実プロバイダー通信は使いません。OpenAI hostの名前解決を失敗させ、許可外HTTPS requestをabortします。`context.route`がMV3 Service Worker由来のfetchを捕捉できないとは確認されていないため、production用test hookは追加していません。経緯、Firefox品質ゲートとの関係、再導入条件は[Issue #9](https://github.com/HidakaKoyo/mazelingo-fx/issues/9)を正本とします。
 
 ## 2026年8月23日のFirefox簡易確認
 
