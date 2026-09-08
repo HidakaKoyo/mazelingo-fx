@@ -13,6 +13,8 @@
 - ライセンス: MIT
 - ホームページ: https://github.com/HidakaKoyo/mazelingo-fx
 - サポート: https://github.com/HidakaKoyo/mazelingo-fx/issues
+- サポートメール: 空欄
+- セキュリティ報告: https://github.com/HidakaKoyo/mazelingo-fx/security/advisories/new
 - 有料サービス等の利用: あり。外部AIプロバイダーの利用料金が発生する場合があります
 - プライバシーポリシー: docs/privacy-policy.md の本文
 

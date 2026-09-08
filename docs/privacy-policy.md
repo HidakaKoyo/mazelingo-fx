@@ -76,4 +76,6 @@ Mazelingo-FXを削除しても、外部プロバイダーにあるデータは�
 
 ## 問い合わせ先
 
-本ポリシーへの問い合わせは、mazelingo.dev@gmail.comへ送信してください。
+本ポリシーへの一般的な問い合わせは、[GitHub Issues](https://github.com/HidakaKoyo/mazelingo-fx/issues)へ投稿してください。投稿にはGitHubアカウントが必要です。公開IssueにはAPIキー、個人情報、非公開ページの内容を含めないでください。
+
+セキュリティ上の問題は、[非公開脆弱性報告](https://github.com/HidakaKoyo/mazelingo-fx/security/advisories/new)を使ってください。
