@@ -1,7 +1,7 @@
 import { sanitizeHtmlFragment, stripHtmlTags } from "@/utils/content-logic";
 import { renderOriginal, renderVariant } from "@/utils/dom-overlay";
 import type { MlgSpan } from "@/utils/dom-overlay";
-import { STATE, isPageAllowed } from "./state";
+import { STATE, shouldTranslatePage } from "./state";
 
 export function getEnglishText(span: MlgSpan): string {
   const source = span.dataset.mlgSource ?? "";
@@ -35,9 +35,6 @@ export function getDesiredDisplay(span: MlgSpan): string {
   const manual = span.dataset.mlgDisplay;
   if (manual === "en" || manual === "ja") {
     return manual;
-  }
-  if (STATE.displayOverride !== null) {
-    return STATE.displayOverride;
   }
   return span.dataset.mlgDefaultDisplay ?? span.dataset.mlgLang ?? "en";
 }
@@ -81,5 +78,5 @@ export function applyDefaultDisplay(span: MlgSpan): void {
 }
 
 export function isInteractiveEnabled(): boolean {
-  return STATE.config.enabled && isPageAllowed();
+  return shouldTranslatePage();
 }

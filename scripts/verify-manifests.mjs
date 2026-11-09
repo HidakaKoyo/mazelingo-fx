@@ -20,7 +20,30 @@ function hasOwn(object, property) {
   return Object.prototype.hasOwnProperty.call(object, property);
 }
 
+function verifyPageActions(manifest, browserName) {
+  assert(
+    Array.isArray(manifest.permissions) && manifest.permissions.includes("contextMenus"),
+    `${browserName} manifest must request the contextMenus permission`,
+  );
+  const translatePage = manifest.commands?.["translate-page"];
+  assert(
+    translatePage?.suggested_key?.default === "Ctrl+Shift+U" &&
+      translatePage.suggested_key.mac === "Command+Shift+U",
+    `${browserName} manifest must define the translate-page shortcuts`,
+  );
+  assert(
+    hasOwn(manifest.commands ?? {}, "toggle-site-auto-translation") &&
+      !hasOwn(manifest.commands?.["toggle-site-auto-translation"] ?? {}, "suggested_key"),
+    `${browserName} manifest must define the site command without a default shortcut`,
+  );
+  assert(
+    !hasOwn(manifest.commands ?? {}, "reader-translate-page"),
+    `${browserName} manifest must not define the removed reader command`,
+  );
+}
+
 export function verifyChromeManifest(manifest) {
+  verifyPageActions(manifest, "Chrome");
   assert(manifest.manifest_version === 3, "Chrome manifest must use Manifest V3");
   assert(
     manifest.side_panel?.default_path === "sidepanel.html",
@@ -38,6 +61,7 @@ export function verifyChromeManifest(manifest) {
 }
 
 export function verifyFirefoxManifest(manifest) {
+  verifyPageActions(manifest, "Firefox");
   assert(manifest.manifest_version === 3, "Firefox manifest must use Manifest V3");
   assert(
     manifest.sidebar_action?.default_panel === "sidepanel.html",
@@ -58,11 +82,6 @@ export function verifyFirefoxManifest(manifest) {
     !Array.isArray(manifest.permissions) ||
       !manifest.permissions.some((permission) => permission === "sidePanel"),
     "Firefox manifest must not request the sidePanel permission",
-  );
-  const readerCommand = manifest.commands?.["reader-translate-page"];
-  assert(
-    readerCommand?.suggested_key?.default === "Ctrl+Shift+U",
-    "Firefox manifest must define the reader-translate-page shortcut",
   );
   const geckoSettings = manifest.browser_specific_settings?.gecko;
   assert(

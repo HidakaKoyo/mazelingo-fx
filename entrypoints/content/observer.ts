@@ -1,10 +1,9 @@
 import type { MlgSpan } from "@/utils/dom-overlay";
 import { hideTooltip } from "./tooltip";
-import { STATE, hasBlockedAncestor, isPageAllowed } from "./state";
+import { STATE, hasBlockedAncestor, shouldTranslatePage } from "./state";
 import { processRoot, refreshDisplay } from "./root";
 import { resumeUntranslatedBlocks, startIntersectionObserver } from "./blocks";
 import { renderSpanDisplay } from "./text";
-import { cancelReaderForUrlChange } from "./reader";
 
 let lastSeenUrl = "";
 
@@ -18,7 +17,6 @@ export function resetReusableBlocksForUrlChange(): void {
     delete block.dataset.mlgFailed;
     delete block.dataset.mlgOutput;
     delete block.dataset.mlgQueued;
-    delete block.dataset.mlgReaderFailed;
     delete block.dataset.mlgTranslating;
   });
 }
@@ -61,7 +59,6 @@ export function start(): void {
 }
 
 export function resumeAutomaticTranslation(resetReusableBlocks = false): void {
-  STATE.mode = "auto";
   STATE.runId += 1;
   STATE.runHref = location.href;
   lastSeenUrl = location.href;
@@ -91,8 +88,6 @@ export function pauseAutomaticTranslation(): void {
 
 export function stop(): void {
   pauseAutomaticTranslation();
-  STATE.displayOverride = null;
-  STATE.mode = "auto";
   const spans = document.querySelectorAll<HTMLElement>("span[data-mlg-sentence]");
   spans.forEach((span: MlgSpan) => {
     renderSpanDisplay(span, span.dataset.mlgLang ?? "en");
@@ -106,24 +101,21 @@ export function evaluatePageForCurrentUrl(): void {
     return;
   }
   lastSeenUrl = location.href;
-  const wasReader = STATE.mode === "reader";
   const wasStarted = STATE.started;
-  const shouldTranslate = STATE.config.enabled && isPageAllowed();
-  if (wasReader) {
-    cancelReaderForUrlChange();
-  } else if (wasStarted) {
+  const shouldTranslate = shouldTranslatePage();
+  if (wasStarted) {
     pauseAutomaticTranslation();
     if (shouldTranslate) {
       resumeAutomaticTranslation(true);
     }
   }
-  if (shouldTranslate && !wasReader && !wasStarted) {
+  if (shouldTranslate && !wasStarted) {
     start();
-    refreshDisplay(wasReader);
+    refreshDisplay();
   } else if (!shouldTranslate && STATE.started) {
     stop();
   } else if (shouldTranslate) {
-    refreshDisplay(wasReader);
+    refreshDisplay();
   }
 }
 

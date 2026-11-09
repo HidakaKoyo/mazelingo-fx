@@ -57,6 +57,13 @@ describe("mergeConfig local endpoint", () => {
 });
 
 describe("mergeConfig compatibility", () => {
+  it("migrates the old default include list exactly once", () => {
+    expect(mergeConfig({ pageListInclude: "https://*" }).pageListInclude).toBe("");
+    expect(
+      mergeConfig({ pageListDefaultMigrated: true, pageListInclude: "https://*" }).pageListInclude,
+    ).toBe("https://*");
+  });
+
   it("strips legacy positional config keys", () => {
     const raw: unknown = {
       providerId: "old",
@@ -72,6 +79,7 @@ describe("mergeConfig compatibility", () => {
 
   it("uses the single source of truth defaults (no model, minTextLength 5)", () => {
     const result = mergeConfig({});
+    expect(result.autoTranslate).toBe(true);
     expect(result.models).toEqual([]);
     expect(result.minTextLength).toBe(5);
   });
@@ -109,4 +117,18 @@ describe("mergeConfig translation mode", () => {
       expect(loaded).toEqual(saved);
     },
   );
+});
+
+describe("mergeConfig automatic translation", () => {
+  it("round-trips the switch and page lists through stored JSON", () => {
+    const saved = mergeConfig({
+      autoTranslate: false,
+      pageListExclude: "https://example.com/private/*",
+      pageListInclude: "https://example.com/*",
+    });
+    const serialized: unknown = JSON.parse(JSON.stringify(saved));
+    if (!isMergeInput(serialized)) throw new Error("expected serialized config");
+
+    expect(mergeConfig(serialized)).toEqual(saved);
+  });
 });

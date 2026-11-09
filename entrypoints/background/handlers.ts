@@ -27,6 +27,17 @@ import {
 import type { Sender } from "./handlers-impl";
 export type { Sender } from "./handlers-impl";
 import type { MlgMessage } from "@/utils/messages";
+import type { DeepReadonly } from "@/utils/cache";
+
+type BackgroundMessage = Exclude<
+  MlgMessage,
+  {
+    type:
+      | "mlg:getPageTranslationState"
+      | "mlg:siteAutoTranslationChanged"
+      | "mlg:togglePageTranslation";
+  }
+>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -50,10 +61,11 @@ function respondAsync<T>(
   return true;
 }
 
-function dispatch(message: MlgMessage, sender: Sender): Promise<unknown> | undefined {
+function dispatch(
+  message: DeepReadonly<BackgroundMessage>,
+  sender: Sender,
+): Promise<unknown> | undefined {
   switch (message.type) {
-    case "mlg:readerRun":
-      return undefined;
     case "mlg:getConfig":
       return loadConfig();
     case "mlg:refreshModelCatalog":
@@ -96,9 +108,8 @@ function dispatch(message: MlgMessage, sender: Sender): Promise<unknown> | undef
       return tts(message.payload);
     case "mlg:translate":
       return translate(message.payload);
-    default:
-      return undefined;
   }
+  return undefined;
 }
 
 export function handleMessage(
@@ -107,6 +118,13 @@ export function handleMessage(
   sendResponse: (response?: unknown) => void,
 ): boolean {
   if (!isMlgMessage(message)) {
+    return false;
+  }
+  if (
+    message.type === "mlg:togglePageTranslation" ||
+    message.type === "mlg:getPageTranslationState" ||
+    message.type === "mlg:siteAutoTranslationChanged"
+  ) {
     return false;
   }
   const result = dispatch(message, sender);

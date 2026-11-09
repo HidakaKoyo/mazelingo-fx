@@ -1,4 +1,3 @@
-import { browser } from "wxt/browser";
 import { elements } from "./el";
 import { getTranslations } from "./translations";
 import { switchTab } from "./ui";
@@ -11,7 +10,7 @@ import {
   setOutputMode,
   setOutputType,
 } from "./output";
-import { clearCache, refreshCacheStats, updateDirtyState } from "./config";
+import { clearCache, refreshCacheStats } from "./config";
 import { renderFeedback } from "./feedback";
 import { renderVocabSuggestions } from "./modal";
 import { loadVocab, setLastMatchedVocab } from "./vocab";
@@ -22,30 +21,6 @@ function showFeedbackStatus(className: string, message: string): void {
   status.className = className;
   status.textContent = message;
   elements.outputFeedback.replaceChildren(status);
-}
-
-export async function addCurrentSiteTo(textarea: HTMLTextAreaElement): Promise<void> {
-  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  if (tab?.url === undefined) {
-    return;
-  }
-  const url = new URL(tab.url);
-  const pattern = `${url.origin}/*`;
-  const current = textarea.value.trim();
-  const lines =
-    current === ""
-      ? []
-      : current
-          .split("\n")
-          .map((l) => l.trim())
-          .filter((l) => l !== "");
-  if (lines.includes(pattern)) {
-    return;
-  }
-  lines.push(pattern);
-  textarea.value = lines.join("\n");
-  textarea.scrollTop = textarea.scrollHeight;
-  updateDirtyState();
 }
 
 async function handleOutputSend(): Promise<void> {

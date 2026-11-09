@@ -13,6 +13,44 @@ export interface PanelBrowser {
   readonly sidePanel?: SidePanelApi;
 }
 
+export interface ContextMenuApi {
+  readonly create: (properties: Readonly<Record<string, unknown>>) => unknown;
+  readonly onClicked: Readonly<{
+    addListener: (
+      listener: (info: Readonly<{ menuItemId: string | number }>, tab?: Tab) => void,
+    ) => void;
+  }>;
+  readonly onShown?: Readonly<{
+    addListener: (listener: (info: unknown, tab?: Tab) => void) => void;
+  }>;
+  readonly refresh?: () => Promise<void> | void;
+  readonly removeAll: () => Promise<void> | void;
+  readonly update: (
+    id: string,
+    properties: Readonly<Record<string, unknown>>,
+  ) => Promise<void> | void;
+}
+
+export interface Tab {
+  readonly id?: number;
+  readonly url?: string;
+}
+
+interface ContextMenuBrowser {
+  readonly contextMenus?: Readonly<ContextMenuApi>;
+  readonly menus?: Readonly<ContextMenuApi>;
+}
+
+export function getContextMenuApiWith(
+  menuBrowser: Readonly<ContextMenuBrowser>,
+): ContextMenuApi | undefined {
+  return menuBrowser.menus ?? menuBrowser.contextMenus;
+}
+
+export function getContextMenuApi(): ContextMenuApi | undefined {
+  return getContextMenuApiWith(browser);
+}
+
 function openChromeSidePanelWith(
   panelBrowser: Readonly<PanelBrowser>,
   tabId?: number,

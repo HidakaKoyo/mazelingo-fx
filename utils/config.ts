@@ -14,6 +14,7 @@ import { DEFAULT_LOCAL_ENDPOINT, mergeLocalEndpoint } from "./local-endpoint";
 import type { LocalEndpointConfig } from "./local-endpoint";
 
 export interface Config {
+  autoTranslate: boolean;
   enabled: boolean;
   models: string[];
   apiKeys: Record<string, string>;
@@ -22,6 +23,7 @@ export interface Config {
   localModelId: string;
   pageListInclude: string;
   pageListExclude: string;
+  pageListDefaultMigrated: boolean;
   mixLanguage: boolean;
   englishRatio: number;
   translateButtons: boolean;
@@ -33,6 +35,7 @@ export interface Config {
 
 export const DEFAULT_CONFIG: Config = {
   apiKeys: {},
+  autoTranslate: true,
   enabled: true,
   englishRatio: 30,
   minTextLength: 5,
@@ -43,7 +46,8 @@ export const DEFAULT_CONFIG: Config = {
   models: [],
   outputRatio: 20,
   pageListExclude: "",
-  pageListInclude: "https://*",
+  pageListInclude: "",
+  pageListDefaultMigrated: true,
   translateButtons: false,
   ttsVoice: "nova",
 };
@@ -86,6 +90,10 @@ export function mergeConfig(raw: Readonly<MergeInput> | null | undefined): Confi
         ? safe.translationMode
         : "model-chain",
   };
+  if (safe.pageListDefaultMigrated !== true && safe.pageListInclude === "https://*") {
+    merged.pageListInclude = "";
+  }
+  merged.pageListDefaultMigrated = true;
   if ("providerId" in merged) {
     delete merged.providerId;
   }

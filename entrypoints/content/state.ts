@@ -11,7 +11,7 @@ export const HOVER_ACTIVATION_MS = 300;
 export const TOGGLE_ANIMATION_MS = 1400;
 const BUTTON_SELECTOR = "button,[role='button']",
   SKIP_SELECTOR =
-    "script,style,textarea,input,code,pre,noscript,svg,math,select,option,nav,header,footer,aside,[role='navigation'],[role='banner'],[role='contentinfo'],[contenteditable='true'],[translate='no'],.notranslate,[data-mlg-sentence],[data-mlg-tooltip],[data-mlg-block],[data-mlg-reader-status]";
+    "script,style,textarea,input,code,pre,noscript,svg,math,select,option,nav,header,footer,aside,[role='navigation'],[role='banner'],[role='contentinfo'],[contenteditable='true'],[translate='no'],.notranslate,[data-mlg-sentence],[data-mlg-tooltip],[data-mlg-block],[data-mlg-status]";
 
 export const BLOCK_DISPLAY_VALUES = new Set([
   "block",
@@ -43,7 +43,6 @@ export interface PendingBlock {
   separators: string[];
   atoms: Map<number, Node>;
   lang: Language;
-  mode: "auto" | "reader";
   href: string;
   runId: number;
   retried?: boolean;
@@ -65,10 +64,9 @@ interface ContentState {
   observer: MutationObserver | null;
   intersectionObserver: IntersectionObserver | null;
   pendingBlocks: PendingBlock[];
-  mode: "auto" | "reader";
+  pageTranslationOverride: "on" | "off" | null;
   runId: number;
   runHref: string;
-  displayOverride: Language | null;
   blockTranslateTimer: ReturnType<typeof setTimeout> | null;
   tooltip: TooltipState | null;
   tooltipHover: boolean;
@@ -90,10 +88,9 @@ const initialState: ContentState = {
   intersectionObserver: null,
   observer: null,
   pendingBlocks: [],
-  mode: "auto",
+  pageTranslationOverride: null,
   runId: 0,
   runHref: "",
-  displayOverride: null,
   started: false,
   tooltip: null,
   tooltipHover: false,
@@ -118,6 +115,14 @@ export function isPageAllowed(): boolean {
   return isPageAllowedLogic(location.href, STATE.includeMatchers, STATE.excludeMatchers);
 }
 
+export function shouldTranslatePage(): boolean {
+  return (
+    STATE.config.enabled &&
+    STATE.pageTranslationOverride !== "off" &&
+    (STATE.pageTranslationOverride === "on" || (STATE.config.autoTranslate && isPageAllowed()))
+  );
+}
+
 export interface RuntimeError {
   readonly error: string;
 }
@@ -128,10 +133,7 @@ export function isRuntimeError(value: unknown): value is RuntimeError {
 
 export function isCurrentTranslationRequest(block: PendingBlock): boolean {
   return (
-    STATE.mode === block.mode &&
-    STATE.runId === block.runId &&
-    location.href === block.href &&
-    STATE.runHref === block.href
+    STATE.runId === block.runId && location.href === block.href && STATE.runHref === block.href
   );
 }
 

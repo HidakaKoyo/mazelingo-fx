@@ -36,14 +36,15 @@ PLaMo翻訳では、同じ接続先へ同時に送る`/completions`要求を8本
 
 コンテンツスクリプトは、ページ内の末端ブロックを抽出し、HTML構造を保った翻訳単位をバックグラウンド処理へ送ります。
 翻訳結果はDOM上へ重ねて表示します。
-通常の画面遷移、再読み込み、`MutationObserver`による変化、SPAとHistory APIによる画面遷移を考慮しています。
+通常の画面遷移、再読み込み、`MutationObserver`による変化、SPAとHistory APIによる画面遷移を考慮しています。ページ単位の翻訳要求はコンテンツスクリプト内だけに保持し、再読み込みでは消えますが、同じ文書内のSPA遷移では継続します。
+自動翻訳は全体の翻訳スイッチ、自動翻訳スイッチ、許可一覧、除外一覧で判定します。ページ単位の要求は自動翻訳スイッチと両方の一覧を迂回して同じ通常翻訳経路を使います。
 ブラウザAPIに依存しない処理は、`utils/content-logic*`、`utils/dom-overlay*`、`utils/translation.ts`などへ分離します。
 
 ## Sidebarとブラウザ境界
 
 `entrypoints/sidepanel/`のHTMLと処理はブラウザ境界の内側で共有します。
 FirefoxではSidebarとして表示します。ChromiumのSide Panel生成は、上流追従の互換性を確認するためにだけ残します。
-ツールバーのアイコンから開く操作だけがブラウザ固有です。
+ツールバーのアイコンと「このページを翻訳」だけを置く右クリックメニューのAPI差分は、共通のブラウザ境界を通します。
 
 ## LLM処理
 
@@ -64,15 +65,15 @@ LLM処理は、モデルの判定、要求の生成、応答の解析、プロ�
 ローカル保存には`browser.storage.local`を使います。
 主なキーは`utils/keys.ts`で一元管理します。
 
-| キー                      | 内容                                                            |
-| ------------------------- | --------------------------------------------------------------- |
-| `mlg_config`              | APIキー、モデル、カスタムサーバー、言語、混在率、対象サイトなど |
-| `mlg_translation_cache`   | 翻訳キャッシュ                                                  |
-| `mlg_norma_cache`         | Norma処理のキャッシュ                                           |
-| `mlg_vocab`               | 語彙                                                            |
-| `mlg_pending_explanation` | パネルをまたいで引き継ぐ文法解説の状態                          |
-| `mlg_ui_language`         | UIの表示言語                                                    |
-| `mlg_my_examples`         | 保存した利用例                                                  |
+| キー                      | 内容                                                                |
+| ------------------------- | ------------------------------------------------------------------- |
+| `mlg_config`              | APIキー、モデル、カスタムサーバー、言語、混在率、自動翻訳サイトなど |
+| `mlg_translation_cache`   | 翻訳キャッシュ                                                      |
+| `mlg_norma_cache`         | Norma処理のキャッシュ                                               |
+| `mlg_vocab`               | 語彙                                                                |
+| `mlg_pending_explanation` | パネルをまたいで引き継ぐ文法解説の状態                              |
+| `mlg_ui_language`         | UIの表示言語                                                        |
+| `mlg_my_examples`         | 保存した利用例                                                      |
 
 APIキーは、`mlg_config.apiKeys`へ平文で保存します。
 カスタムサーバー (OpenAI 互換) のベースURLと任意のAPIキーは、`mlg_config.localEndpoint`へ保存します。
@@ -82,7 +83,7 @@ APIキーは、`mlg_config.apiKeys`へ平文で保存します。
 ## ブラウザ固有処理の境界
 
 ブラウザによる差分は、`wxt.config.ts`と`utils/browser-actions.ts`へ集約します。
-`wxt.config.ts`は、Firefoxの`sidebar_action`とChromeの`side_panel`を対象別に生成します。
-`utils/browser-actions.ts`は、Firefoxの`sidebarAction`とChromeの`sidePanel`を呼び分けます。
+`wxt.config.ts`は、Firefoxの`sidebar_action`とChromeの`side_panel`を対象別に生成し、共通の`commands`と`contextMenus`権限を定義します。
+`utils/browser-actions.ts`は、Firefoxの`sidebarAction`と`menus`、Chromeの`sidePanel`と`contextMenus`を呼び分けます。
 共通処理へ条件分岐を散在させず、この二つの場所に差分を閉じ込めます。
 Firefox向けの責任範囲、Chromium互換性の位置づけ、上流追従は[Firefox移植](FIREFOX_PORT.md)と[Upstream運用](UPSTREAM.md)を参照してください。

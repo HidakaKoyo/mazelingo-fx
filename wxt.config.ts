@@ -17,6 +17,16 @@ const ICONS = {
   48: "icons/icon48.png",
 } as const;
 
+const COMMANDS = {
+  "toggle-site-auto-translation": {
+    description: "Toggle automatic translation for this site",
+  },
+  "translate-page": {
+    description: "Translate this page or restore the original",
+    suggested_key: { default: "Ctrl+Shift+U", mac: "Command+Shift+U" },
+  },
+} as const;
+
 export default defineConfig({
   webExt: isFirefoxLab
     ? {
@@ -35,9 +45,10 @@ export default defineConfig({
       host_permissions: ["<all_urls>"],
       icons: ICONS,
       name: "Mazelingo-FX",
+      commands: COMMANDS,
       permissions: isFirefox
-        ? ["storage", "activeTab", "tabs"]
-        : ["storage", "sidePanel", "activeTab", "tabs"],
+        ? ["storage", "activeTab", "tabs", "contextMenus"]
+        : ["storage", "sidePanel", "activeTab", "tabs", "contextMenus"],
       ...(isFirefox
         ? {
             browser_specific_settings: {
@@ -53,12 +64,6 @@ export default defineConfig({
               default_icon: "icons/icon128.png",
               default_panel: "sidepanel.html",
               default_title: "Mazelingo",
-            },
-            commands: {
-              "reader-translate-page": {
-                description: "Translate this page in reading mode",
-                suggested_key: { default: "Ctrl+Shift+U" },
-              },
             },
           }
         : {

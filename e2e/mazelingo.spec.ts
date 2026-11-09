@@ -65,6 +65,7 @@ async function getExtensionPage(context: BrowserContext): Promise<Page> {
         mixLanguage: true,
         models: ["gpt-5.2"],
         outputRatio: 20,
+        pageListDefaultMigrated: true,
         pageListExclude: "",
         pageListInclude: "https://*",
         translateButtons: false,

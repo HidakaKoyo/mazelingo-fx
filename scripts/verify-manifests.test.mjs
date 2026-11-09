@@ -13,20 +13,27 @@ import {
 
 const validChromeManifest = {
   manifest_version: 3,
-  permissions: ["storage", "sidePanel"],
+  permissions: ["storage", "sidePanel", "contextMenus"],
+  commands: {
+    "translate-page": {
+      suggested_key: { default: "Ctrl+Shift+U", mac: "Command+Shift+U" },
+    },
+    "toggle-site-auto-translation": {},
+  },
   side_panel: { default_path: "sidepanel.html" },
   background: { service_worker: "background.js" },
 };
 
 const validFirefoxManifest = {
   manifest_version: 3,
-  permissions: ["storage"],
+  permissions: ["storage", "contextMenus"],
   sidebar_action: { default_panel: "sidepanel.html" },
   background: { scripts: ["background.js"] },
   commands: {
-    "reader-translate-page": {
-      suggested_key: { default: "Ctrl+Shift+U" },
+    "translate-page": {
+      suggested_key: { default: "Ctrl+Shift+U", mac: "Command+Shift+U" },
     },
+    "toggle-site-auto-translation": {},
   },
   browser_specific_settings: {
     gecko: {
@@ -58,7 +65,11 @@ test("rejects Firefox manifests containing Chrome-only fields", () => {
     /must not define background\.service_worker/u,
   );
   assert.throws(
-    () => verifyFirefoxManifest({ ...validFirefoxManifest, permissions: ["sidePanel"] }),
+    () =>
+      verifyFirefoxManifest({
+        ...validFirefoxManifest,
+        permissions: ["sidePanel", "contextMenus"],
+      }),
     /must not request the sidePanel permission/u,
   );
 });
@@ -131,10 +142,25 @@ test("rejects Firefox manifests without signing and data consent metadata", () =
   );
 });
 
-test("rejects Firefox manifests without the reader shortcut", () => {
+test("rejects manifests without page-action commands and permission", () => {
   assert.throws(
     () => verifyFirefoxManifest({ ...validFirefoxManifest, commands: {} }),
-    /must define the reader-translate-page shortcut/u,
+    /must define the translate-page shortcuts/u,
+  );
+  assert.throws(
+    () => verifyChromeManifest({ ...validChromeManifest, permissions: ["storage", "sidePanel"] }),
+    /must request the contextMenus permission/u,
+  );
+  assert.throws(
+    () =>
+      verifyFirefoxManifest({
+        ...validFirefoxManifest,
+        commands: {
+          ...validFirefoxManifest.commands,
+          "toggle-site-auto-translation": { suggested_key: { default: "Ctrl+Shift+Y" } },
+        },
+      }),
+    /without a default shortcut/u,
   );
 });
 
@@ -176,7 +202,8 @@ test("rejects Chrome manifests without MV3 side panel service worker fields", ()
     /background\.service_worker must be background\.js/u,
   );
   assert.throws(
-    () => verifyChromeManifest({ ...validChromeManifest, permissions: ["storage"] }),
+    () =>
+      verifyChromeManifest({ ...validChromeManifest, permissions: ["storage", "contextMenus"] }),
     /must request the sidePanel permission/u,
   );
 });

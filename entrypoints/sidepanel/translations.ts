@@ -1,5 +1,5 @@
 import { translationModeTranslations } from "./translation-mode-translations";
-
+import { autoTranslationTranslations } from "./auto-translation-translations";
 export type Language = "ja" | "en";
 export const translations = {
   en: {
@@ -18,6 +18,7 @@ export const translations = {
       "Other / Custom does not save or send this key. Configure it under Custom server (OpenAI compatible).",
     apiKeyProviderRequired: "Select a supported provider before saving this API key.",
     apiKeyProviderSelect: "Select provider",
+    ...autoTranslationTranslations.en,
     cacheClear: "Clear cache",
     cacheCleared: "Cleared",
     cacheHint:
@@ -26,9 +27,8 @@ export const translations = {
     cacheStats: (n: number, size: string): string => `${n} entries / ${size}`,
     customModelPlaceholder: "Enter a model ID",
     enable: "Enable translation",
-    enableDesc: "Turn on automatic translation",
+    enableDesc: "Turn on translation",
     english: "English",
-    excludeList: "Pages to exclude",
     explanationChunks: "Close reading",
     explanationEmptyDesc: "Word and sentence explanations will appear here",
     explanationEmptyTitle: "Explanation",
@@ -45,8 +45,6 @@ export const translations = {
     freqDesc3: "Fairly common but more situational",
     freqDesc4: "Used daily or almost daily in conversation",
     freqDesc5: "Used multiple times per day in spoken English",
-    includeList: "Pages to translate",
-    includeListHint: "https://* matches all sites",
     japanese: "Japanese",
     localApiKey: "API key (optional)",
     localBaseUrl: "Server URL",
@@ -158,6 +156,7 @@ export const translations = {
       "その他 / カスタムでは、このキーを保存・送信しません。カスタムサーバー (OpenAI 互換) に設定してください",
     apiKeyProviderRequired: "このAPIキーを保存するには、対応済みproviderを選択してください",
     apiKeyProviderSelect: "providerを選択",
+    ...autoTranslationTranslations.ja,
     cacheClear: "キャッシュを削除",
     cacheCleared: "削除しました",
     cacheHint: "翻訳結果を7日間保存して再翻訳を省きます。溜まると動作が重くなることがあります",
@@ -165,9 +164,8 @@ export const translations = {
     cacheStats: (n: number, size: string): string => `${n}件 / ${size}`,
     customModelPlaceholder: "モデルIDを入力",
     enable: "翻訳を有効にする",
-    enableDesc: "自動翻訳機能をオンにします",
+    enableDesc: "翻訳機能をオンにします",
     english: "英語",
-    excludeList: "除外するページ",
     explanationChunks: "読み解き",
     explanationEmptyDesc: "単語や文章の解説をここに表示します",
     explanationEmptyTitle: "解説",
@@ -184,8 +182,6 @@ export const translations = {
     freqDesc3: "会話で使うが、やや場面が限られる",
     freqDesc4: "会話で毎日のように使う。非常に一般的",
     freqDesc5: "日常会話で1日に何度も使う超基本語彙",
-    includeList: "翻訳するページ",
-    includeListHint: "https://* で全サイトにマッチ",
     japanese: "日本語",
     localApiKey: "APIキー（任意）",
     localBaseUrl: "サーバーの URL",
@@ -294,7 +290,6 @@ export function getCurrentLanguage(): Language {
 }
 
 export type Translations = (typeof translations)["ja"];
-
 export function getTranslations(): Translations {
   return translations[lang] ?? translations.ja;
 }

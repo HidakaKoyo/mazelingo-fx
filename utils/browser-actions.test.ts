@@ -1,5 +1,29 @@
 import { describe, expect, it, vi } from "vitest";
-import { openExplanationSidePanelWith, openToolbarPanelWith } from "./browser-actions";
+import type { ContextMenuApi } from "./browser-actions";
+import {
+  getContextMenuApiWith,
+  openExplanationSidePanelWith,
+  openToolbarPanelWith,
+} from "./browser-actions";
+
+function createMenu(): ContextMenuApi {
+  return {
+    create: vi.fn(),
+    onClicked: { addListener: (): void => {} },
+    refresh: vi.fn(),
+    removeAll: vi.fn(),
+    update: vi.fn(),
+  };
+}
+
+it("prefers Firefox menus and falls back to Chromium contextMenus", () => {
+  const firefoxMenus = createMenu();
+  const chromeMenus = createMenu();
+  expect(getContextMenuApiWith({ contextMenus: chromeMenus, menus: firefoxMenus })).toBe(
+    firefoxMenus,
+  );
+  expect(getContextMenuApiWith({ contextMenus: chromeMenus })).toBe(chromeMenus);
+});
 
 describe("openToolbarPanelWith", () => {
   it("opens the Firefox sidebar synchronously", async () => {
