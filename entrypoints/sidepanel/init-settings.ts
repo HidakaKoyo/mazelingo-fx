@@ -19,7 +19,7 @@ import {
   syncCustomModelControl,
   updateModelPickerTrigger,
 } from "./model";
-import { addCurrentSiteTo } from "./init-output";
+import { addCurrentSiteTo } from "./site-list";
 import { initConnectionSettings, refreshConnectionSettings } from "./connection-settings";
 
 function onModelChange(): void {
@@ -27,7 +27,13 @@ function onModelChange(): void {
   updateDirtyState();
 }
 
+function updateAutoTranslateState(): void {
+  elements.autoTranslateOffHint.hidden = elements.autoTranslate.checked;
+  updateDirtyState();
+}
+
 function initSettings(config: DeepReadonly<Config>): void {
+  elements.autoTranslate.checked = config.autoTranslate;
   elements.enabled.checked = config.enabled;
   elements.mixLanguage.checked = config.mixLanguage;
   elements.translateButtons.checked = config.translateButtons;
@@ -42,6 +48,7 @@ function initSettings(config: DeepReadonly<Config>): void {
   elements.minTextLength.value = String(config.minTextLength);
   elements.pageListInclude.value = config.pageListInclude ?? "";
   elements.pageListExclude.value = config.pageListExclude ?? "";
+  elements.autoTranslateOffHint.hidden = config.autoTranslate;
   initConnectionSettings(config, updateDirtyState);
   const models = config.models ?? [];
   elements.englishRatio.value = String(config.englishRatio);
@@ -79,6 +86,7 @@ function initSettingsListeners(): void {
     });
   }
   elements.enabled.addEventListener("change", updateDirtyState);
+  elements.autoTranslate.addEventListener("change", updateAutoTranslateState);
   elements.mixLanguage.addEventListener("change", updateDirtyState);
   elements.translateButtons.addEventListener("change", updateDirtyState);
   elements.ttsVoice.addEventListener("change", updateDirtyState);

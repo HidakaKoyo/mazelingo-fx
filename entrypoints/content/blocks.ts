@@ -12,7 +12,7 @@ import {
   MAX_CONCURRENT_BATCHES,
   STATE,
   isCurrentTranslationRequest,
-  isPageAllowed,
+  shouldTranslatePage,
   isRuntimeError,
   sendMessage,
 } from "./state";
@@ -28,22 +28,18 @@ export function isBlockPending(block: HTMLElement): boolean {
 
 export function retryBlock(block: HTMLElement): void {
   delete block.dataset.mlgFailed;
-  delete block.dataset.mlgReaderFailed;
   block.dataset.mlgTranslating = "1";
   enqueueBlock(block);
 }
 function enqueueBlock(block: HTMLElement): void {
-  const pending = createPendingBlock(block, "auto");
+  const pending = createPendingBlock(block);
   if (!pending) {
     return;
   }
   STATE.pendingBlocks.push(pending);
   queueBlockTranslate();
 }
-export function createPendingBlock(
-  block: HTMLElement,
-  mode: "auto" | "reader",
-): PendingBlock | null {
+export function createPendingBlock(block: HTMLElement): PendingBlock | null {
   if (!block.isConnected || block.dataset.mlgTranslating !== "1") {
     return null;
   }
@@ -61,7 +57,6 @@ export function createPendingBlock(
     htmlParts: cleanParts,
     href: location.href,
     lang,
-    mode,
     runId: STATE.runId,
     separators,
   };
@@ -94,9 +89,6 @@ function isWithinPreloadMargin(block: HTMLElement): boolean {
   );
 }
 function queueObservedBlock(block: Element): void {
-  if (STATE.mode === "reader") {
-    return;
-  }
   if (!(block instanceof HTMLElement) || block.dataset.mlgQueued === "1") {
     return;
   }
@@ -114,20 +106,10 @@ export function observeBlock(block: HTMLElement): void {
     queueObservedBlock(block);
   }
 }
-/** Reconnects untranslated blocks after a temporary reader-mode pause. */
 export function resumeUntranslatedBlocks(): void {
   document.querySelectorAll<HTMLElement>("[data-mlg-block='1']").forEach((block) => {
-    const wasReaderFailure = block.dataset.mlgReaderFailed === "1";
-    if (
-      block.querySelector("[data-mlg-sentence]") ||
-      (block.dataset.mlgTranslating !== "1" && !wasReaderFailure)
-    ) {
+    if (block.querySelector("[data-mlg-sentence]") || block.dataset.mlgTranslating !== "1") {
       return;
-    }
-    if (wasReaderFailure) {
-      delete block.dataset.mlgReaderFailed;
-      delete block.dataset.mlgFailed;
-      block.dataset.mlgTranslating = "1";
     }
     delete block.dataset.mlgQueued;
     observeBlock(block);
@@ -149,7 +131,7 @@ async function translatePendingBlocks(): Promise<void> {
   const hasTranslator = usesLocalTranslation
     ? STATE.config.localEndpoint.baseUrl.trim() !== ""
     : STATE.config.models.length > 0;
-  if (!STATE.config.enabled || !hasTranslator || !isPageAllowed()) {
+  if (!hasTranslator || !shouldTranslatePage()) {
     STATE.pendingBlocks = [];
     return;
   }

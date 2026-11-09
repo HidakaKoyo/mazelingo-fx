@@ -1854,9 +1854,40 @@
             </div>
 
             <div class="section page-list-card">
-              <span class="label" id="includeListLabel">翻訳するページ</span>
+              <label style="display: block; margin-bottom: 8px">
+                <input type="checkbox" id="autoTranslate" class="toggle-input" />
+                <div class="toggle-card">
+                  <div class="toggle-icon" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M5 13l4 4L19 7"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="toggle-title" id="autoTranslateTitle">自動翻訳</div>
+                    <div class="toggle-desc" id="autoTranslateDesc">
+                      下の一覧に一致するページを自動で翻訳します
+                    </div>
+                  </div>
+                </div>
+              </label>
+              <div
+                class="hint"
+                id="autoTranslateOffHint"
+                style="margin-top: 0; margin-bottom: 8px"
+                hidden
+              >
+                自動翻訳は停止中です。一覧は引き続き編集できます。
+              </div>
+              <span class="label" id="includeListLabel">自動で翻訳するページ</span>
               <div class="hint" style="margin-top: 0; margin-bottom: 6px" id="includeListHint">
-                https://* で全サイトにマッチ
+                ほかのページは右クリック、または Mac では ⌘⇧U、Mac 以外では Ctrl+Shift+U
+                で翻訳できます。
               </div>
               <button
                 type="button"
@@ -1872,7 +1903,7 @@
                 placeholder="URLを1行ずつ入力&#10;例: https://example.com/*"
               ></textarea>
               <span class="label" style="margin-top: 10px" id="excludeListLabel"
-                >除外するページ</span
+                >自動翻訳から除外するページ</span
               >
               <button
                 type="button"

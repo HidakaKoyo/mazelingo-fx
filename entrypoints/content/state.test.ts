@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_CONFIG } from "@/utils/config";
 import { STORAGE_KEY } from "@/utils/keys";
@@ -14,12 +15,16 @@ vi.mock("wxt/browser", () => ({
   },
 }));
 
-import { loadConfig, sendMessage } from "./state";
+import { loadConfig, sendMessage, shouldTranslatePage, STATE, updatePageMatchers } from "./state";
 
 describe("content state browser boundary", () => {
   beforeEach(() => {
     browserMocks.get.mockReset();
     browserMocks.sendMessage.mockReset();
+  });
+
+  it("starts a new document without an explicit page translation request", () => {
+    expect(STATE.pageTranslationOverride).toBeNull();
   });
 
   it("converts a rejected runtime message into a RuntimeError", async () => {
@@ -51,5 +56,49 @@ describe("content state browser boundary", () => {
     browserMocks.get.mockResolvedValue({});
 
     await expect(loadConfig()).resolves.toEqual(DEFAULT_CONFIG);
+  });
+});
+
+describe("automatic translation conditions", () => {
+  it.each([
+    [false, false, false, false],
+    [false, false, false, true],
+    [false, false, true, false],
+    [false, false, true, true],
+    [false, true, false, false],
+    [false, true, false, true],
+    [false, true, true, false],
+    [false, true, true, true],
+    [true, false, false, false],
+    [true, false, false, true],
+    [true, false, true, false],
+    [true, false, true, true],
+    [true, true, false, false],
+    [true, true, false, true],
+    [true, true, true, false],
+    [true, true, true, true],
+  ])(
+    "requires enabled=%s, autoTranslate=%s, include=%s, exclude=%s",
+    (enabled, autoTranslate, included, excluded) => {
+      STATE.config = {
+        ...DEFAULT_CONFIG,
+        autoTranslate,
+        enabled,
+        pageListExclude: excluded ? "*" : "",
+        pageListInclude: included ? "*" : "",
+      };
+      STATE.pageTranslationOverride = null;
+      updatePageMatchers();
+
+      expect(shouldTranslatePage()).toBe(enabled && autoTranslate && included && !excluded);
+    },
+  );
+
+  it("keeps an explicitly requested page active while automatic translation is off", () => {
+    STATE.config = { ...DEFAULT_CONFIG, autoTranslate: false, enabled: true };
+    STATE.pageTranslationOverride = "on";
+    updatePageMatchers();
+
+    expect(shouldTranslatePage()).toBe(true);
   });
 });

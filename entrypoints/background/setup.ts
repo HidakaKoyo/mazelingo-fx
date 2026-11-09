@@ -1,15 +1,25 @@
 import { defineBackground } from "wxt/utils/define-background";
 import { browser } from "wxt/browser";
-import { DEFAULT_CONFIG } from "@/utils/config";
-import { openToolbarPanel } from "@/utils/browser-actions";
+import { DEFAULT_CONFIG, mergeConfig } from "@/utils/config";
+import { getContextMenuApi, openToolbarPanel } from "@/utils/browser-actions";
 import { STORAGE_KEY } from "@/utils/keys";
 import { handleMessage } from "./handlers";
 import type { Sender } from "./handlers";
+import {
+  setupContextMenus,
+  togglePageForTab,
+  toggleSiteForTab,
+  TOGGLE_SITE_COMMAND,
+  TRANSLATE_PAGE_COMMAND,
+} from "./page-actions";
 
-async function initializeConfigIfNeeded(): Promise<void> {
+export async function initializeConfigIfNeeded(): Promise<void> {
   const result = await browser.storage.local.get(STORAGE_KEY);
-  if (result[STORAGE_KEY] === undefined || result[STORAGE_KEY] === null) {
+  const stored = result[STORAGE_KEY];
+  if (stored === undefined || stored === null) {
     await browser.storage.local.set({ [STORAGE_KEY]: DEFAULT_CONFIG });
+  } else if (typeof stored === "object" && !("pageListDefaultMigrated" in stored)) {
+    await browser.storage.local.set({ [STORAGE_KEY]: mergeConfig(stored) });
   }
 }
 
@@ -23,13 +33,12 @@ const messageListener: MessageListener = (message, sender, sendResponse) =>
   handleMessage(message, sender, sendResponse);
 
 export function handleCommand(command: string, tab?: Readonly<{ id?: number }>): void {
-  if (command !== "reader-translate-page" || tab?.id === undefined) {
-    return;
-  }
-  void browser.tabs.sendMessage(tab.id, { type: "mlg:readerRun" }).catch(() => {});
+  if (command === TRANSLATE_PAGE_COMMAND) togglePageForTab(tab);
+  if (command === TOGGLE_SITE_COMMAND) void toggleSiteForTab(tab);
 }
 
 export default defineBackground(() => {
+  void initializeConfigIfNeeded();
   browser.runtime.onMessage.addListener(
     messageListener as (
       message: unknown,
@@ -46,4 +55,6 @@ export default defineBackground(() => {
   browser.commands.onCommand.addListener((command, tab) => {
     handleCommand(command, tab);
   });
+  const menu = getContextMenuApi();
+  if (menu) void setupContextMenus(menu);
 });

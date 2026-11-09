@@ -12,12 +12,7 @@ vi.mock("wxt/browser", () => ({
   },
 }));
 
-import {
-  observeBlock,
-  resumeUntranslatedBlocks,
-  retryBlock,
-  startIntersectionObserver,
-} from "./blocks";
+import { observeBlock, retryBlock, startIntersectionObserver } from "./blocks";
 import { STATE, updatePageMatchers } from "./state";
 import type { MlgTranslateResponse } from "./state";
 
@@ -98,7 +93,7 @@ function resetBlockTestState(): void {
   STATE.config.pageListInclude = "*";
   STATE.config.pageListExclude = "";
   STATE.intersectionObserver = null;
-  STATE.mode = "auto";
+  STATE.pageTranslationOverride = null;
   STATE.pendingBlocks = [];
   STATE.runHref = location.href;
   updatePageMatchers();
@@ -157,26 +152,6 @@ describe("observeBlock", () => {
     observer.callback([createIntersectionEntry(block)]);
     expect(observer.unobserve).toHaveBeenCalledWith(block);
     expect(STATE.pendingBlocks).toHaveLength(1);
-  });
-});
-
-describe("reader recovery", () => {
-  it("re-observes a reader failure after reader mode clears its queue", () => {
-    startIntersectionObserver();
-    const observer = FakeIntersectionObserver.instances[0];
-    if (!observer) throw new Error("expected intersection observer");
-    const block = createBlock({ bottom: 5200, left: 20, right: 120, top: 5100 });
-    block.dataset.mlgBlock = "1";
-    block.dataset.mlgFailed = "1";
-    block.dataset.mlgReaderFailed = "1";
-    delete block.dataset.mlgTranslating;
-
-    resumeUntranslatedBlocks();
-
-    expect(block.dataset.mlgFailed).toBeUndefined();
-    expect(block.dataset.mlgReaderFailed).toBeUndefined();
-    expect(block.dataset.mlgTranslating).toBe("1");
-    expect(observer.observe).toHaveBeenCalledWith(block);
   });
 });
 

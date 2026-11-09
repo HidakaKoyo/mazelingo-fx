@@ -46,6 +46,7 @@ function parseRatioInput(input: HTMLInputElement, fallback: number): number {
 export function collectFormState(): Config {
   return {
     apiKeys: collectApiKeys(),
+    autoTranslate: elements.autoTranslate.checked,
     enabled: elements.enabled.checked,
     englishRatio: parseRatioInput(elements.englishRatio, 0),
     localEndpoint: {
@@ -59,6 +60,7 @@ export function collectFormState(): Config {
     outputRatio: parseRatioInput(elements.outputRatio, 0),
     pageListExclude: elements.pageListExclude.value,
     pageListInclude: elements.pageListInclude.value,
+    pageListDefaultMigrated: true,
     translateButtons: elements.translateButtons.checked,
     translationMode:
       elements.translationUse.value === "api"

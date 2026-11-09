@@ -221,7 +221,12 @@ export interface RefreshModelCatalogPayload {
  * accepts. Each variant carries its own payload type.
  */
 export type MlgMessage =
-  | { type: "mlg:readerRun"; payload?: undefined }
+  | { type: "mlg:togglePageTranslation"; payload?: undefined }
+  | { type: "mlg:getPageTranslationState"; payload?: undefined }
+  | {
+      type: "mlg:siteAutoTranslationChanged";
+      payload: { enabled: boolean; status: "changed" | "broader-match" };
+    }
   | { type: "mlg:getConfig"; payload?: undefined }
   | { type: "mlg:refreshModelCatalog"; payload?: RefreshModelCatalogPayload }
   | { type: "mlg:setConfig"; payload: SetConfigPayload }

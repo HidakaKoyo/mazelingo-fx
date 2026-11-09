@@ -2,7 +2,6 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const observerMocks = vi.hoisted(() => ({
-  cancelReaderForUrlChange: vi.fn(),
   hideTooltip: vi.fn(),
   processRoot: vi.fn(),
   refreshDisplay: vi.fn(),
@@ -21,7 +20,6 @@ vi.mock("./blocks", () => ({
   resumeUntranslatedBlocks: observerMocks.resumeUntranslatedBlocks,
   startIntersectionObserver: observerMocks.startIntersectionObserver,
 }));
-vi.mock("./reader", () => ({ cancelReaderForUrlChange: observerMocks.cancelReaderForUrlChange }));
 vi.mock("./root", () => ({
   processRoot: observerMocks.processRoot,
   refreshDisplay: observerMocks.refreshDisplay,
@@ -53,7 +51,7 @@ function resetObserverTestState(): void {
   STATE.config.pageListInclude = "*";
   STATE.config.pageListExclude = "";
   STATE.intersectionObserver = null;
-  STATE.mode = "auto";
+  STATE.pageTranslationOverride = null;
   STATE.observer = null;
   STATE.pendingBlocks = [];
   STATE.runHref = "";
@@ -81,7 +79,6 @@ function createPendingBlock(): PendingBlock {
     href: location.href,
     htmlParts: ["Pending block"],
     lang: "en",
-    mode: "auto",
     runId: STATE.runId,
     separators: [],
   };
@@ -125,6 +122,20 @@ it("drops old pending blocks before restarting automatic translation after an SP
   expect(reusedBlock.dataset.mlgBound).toBe("1");
   expect(reusedBlock.dataset.mlgFailed).toBeUndefined();
   expect(observerMocks.resumeUntranslatedBlocks).toHaveBeenCalledTimes(2);
+});
+
+it("keeps an explicit page request across an SPA URL change", () => {
+  STATE.config.pageListInclude = "";
+  STATE.pageTranslationOverride = "on";
+  updatePageMatchers();
+  resumeAutomaticTranslation();
+  window.history.pushState({}, "", "/spa-page");
+
+  evaluatePageForCurrentUrl();
+
+  expect(STATE.started).toBe(true);
+  expect(STATE.pageTranslationOverride).toBe("on");
+  expect(STATE.runHref).toBe(location.href);
 });
 
 it("releases only raw reused blocks for fresh discovery", () => {

@@ -32,6 +32,9 @@ function applyHeaderLabels(): void {
   elements.panelTitle.textContent = t.title;
   elements.enableTitle.textContent = t.enable;
   elements.enableDesc.textContent = t.enableDesc;
+  setText("autoTranslateTitle", t.autoTranslate);
+  setText("autoTranslateDesc", t.autoTranslateDesc);
+  elements.autoTranslateOffHint.textContent = t.autoTranslateOffHint;
   elements.mixLanguageTitle.textContent = t.mixLanguage;
   elements.mixLanguageDesc.textContent = t.mixLanguageDesc;
   elements.translateButtonsTitle.textContent = t.translateButtons;
