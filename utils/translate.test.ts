@@ -11,7 +11,11 @@ import {
 import { mergeConfig, type Config } from "./config";
 import type { LocalEndpointConfig } from "./local-endpoint";
 import type { TranslationBlock } from "./messages";
-import { modelChainCacheContext, plamoCacheContext } from "./translation-cache-key";
+import {
+  localModelCacheContext,
+  modelChainCacheContext,
+  plamoCacheContext,
+} from "./translation-cache-key";
 
 interface FakeCacheBackend extends CacheBackend {
   state: Record<string, unknown>;
@@ -206,12 +210,35 @@ describe("translateBatch (PLaMo caching)", () => {
         "Hello.",
         "en",
         "ja",
-        plamoCacheContext(config.plamoModel, config.localEndpoint.baseUrl),
+        plamoCacheContext(config.localModelId, config.localEndpoint.baseUrl),
       );
       expect(hit?.block).toEqual(first.blocks[0]);
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+});
+
+describe("translateBatch (local model)", () => {
+  it("uses the model-chain flow with only the configured local model", async () => {
+    const { deps, llm, cache, config } = await setup({
+      config: {
+        localEndpoint: { baseUrl: "http://localhost:1234/v1" },
+        localModelId: "server-model",
+        models: ["gpt-4.1-mini"],
+        translationMode: "local-model",
+      },
+    });
+    await translateBatch({ from: "en", htmlBlocks: ["Hello"], to: "ja" }, deps);
+    expect(llm).toHaveBeenCalledWith(
+      ["custom/server-model"],
+      expect.any(Array),
+      config.apiKeys,
+      expect.any(Object),
+      config.localEndpoint,
+    );
+    const cacheContext = localModelCacheContext(config.localModelId, config.localEndpoint.baseUrl);
+    expect(await cache.lookup("Hello", "en", "ja", cacheContext)).not.toBeNull();
   });
 });
 

@@ -145,7 +145,10 @@ function queueBlockTranslate(): void {
   }, 200);
 }
 async function translatePendingBlocks(): Promise<void> {
-  const hasTranslator = STATE.config.translationMode === "plamo" || STATE.config.models.length > 0;
+  const usesLocalTranslation = STATE.config.translationMode !== "model-chain";
+  const hasTranslator = usesLocalTranslation
+    ? STATE.config.localEndpoint.baseUrl.trim() !== ""
+    : STATE.config.models.length > 0;
   if (!STATE.config.enabled || !hasTranslator || !isPageAllowed()) {
     STATE.pendingBlocks = [];
     return;

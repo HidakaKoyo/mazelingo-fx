@@ -33,11 +33,11 @@ afterEach(() => {
 
 function testRequestShape(): void {
   it("builds /chat/completions with the unprefixed model and no empty auth header", () => {
-    const provider = resolveLocalProvider("local/default_model", ENDPOINT);
+    const provider = resolveLocalProvider("custom/default_model", ENDPOINT);
     if (provider === null) throw new Error("expected a local provider");
     const request = buildLLMRequest(
       provider,
-      "local/default_model",
+      "custom/default_model",
       MESSAGES,
       "",
       TRANSLATION_SCHEMA,
@@ -49,6 +49,15 @@ function testRequestShape(): void {
     expect(request.options.headers.Authorization).toBeUndefined();
     expect(JSON.parse(request.options.body)).toMatchObject({ model: "default_model" });
   });
+
+  it.each(["custom/default_model", "local/default_model"])(
+    "resolves %s to the custom server",
+    (model) => {
+      expect(resolveLocalProvider(model, ENDPOINT)?.entry.baseUrl).toBe(
+        "http://127.0.0.1:8765/v1/chat/completions",
+      );
+    },
+  );
 }
 
 function testOptionalApiKey(): void {
@@ -57,7 +66,7 @@ function testOptionalApiKey(): void {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(
-      callLLMChain(["local/test-model"], MESSAGES, {}, undefined, ENDPOINT),
+      callLLMChain(["custom/test-model"], MESSAGES, {}, undefined, ENDPOINT),
     ).resolves.toEqual({ ok: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
@@ -74,7 +83,7 @@ function testOptionalApiKey(): void {
       },
     );
     vi.stubGlobal("fetch", fetchMock);
-    await callLLMChain(["local/test-model"], MESSAGES, {}, undefined, {
+    await callLLMChain(["custom/test-model"], MESSAGES, {}, undefined, {
       ...ENDPOINT,
       apiKey: "local-secret",
     });
@@ -99,7 +108,7 @@ function testTimeoutFallback(): void {
     vi.stubGlobal("fetch", fetchMock);
 
     const resultPromise = callLLMChain(
-      ["local/default_model", "gpt-4.1-mini"],
+      ["custom/default_model", "gpt-4.1-mini"],
       MESSAGES,
       { gpt: "openai-key" },
       undefined,
@@ -126,7 +135,7 @@ function testEmptyDefault(): void {
 
     await expect(
       callLLMChain(
-        ["local/default_model", "gpt-4.1-mini"],
+        ["custom/default_model", "gpt-4.1-mini"],
         MESSAGES,
         { gpt: "openai-key" },
         UNSET,

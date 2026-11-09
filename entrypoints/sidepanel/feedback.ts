@@ -1,6 +1,6 @@
 import type { FeedbackResult } from "@/utils/messages";
-import { elements, escapeHtml } from "./el";
-import { selectedTtsVoice, type DeepReadonly } from "./util";
+import { elements } from "./el";
+import { escapeHtml, selectedTtsVoice, type DeepReadonly } from "./util";
 import { getTranslations } from "./translations";
 import { tts } from "./rpc";
 

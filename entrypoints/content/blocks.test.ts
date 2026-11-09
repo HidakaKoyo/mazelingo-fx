@@ -94,6 +94,7 @@ function resetBlockTestState(): void {
   STATE.config.enabled = true;
   STATE.config.models = ["openrouter/deepseek/deepseek-chat"];
   STATE.config.translationMode = "model-chain";
+  STATE.config.localEndpoint.baseUrl = "";
   STATE.config.pageListInclude = "*";
   STATE.config.pageListExclude = "";
   STATE.intersectionObserver = null;
@@ -184,12 +185,36 @@ describe("batch concurrency", () => {
     vi.useFakeTimers();
     STATE.config.translationMode = "plamo";
     STATE.config.models = [];
+    STATE.config.localEndpoint.baseUrl = "http://localhost:1234/v1";
     browserMocks.sendMessage.mockResolvedValue(successfulTranslationResponse());
     retryBlock(createBlock({ bottom: 120, left: 20, right: 120, top: 20 }));
     await vi.advanceTimersByTimeAsync(200);
     expect(browserMocks.sendMessage).toHaveBeenCalledTimes(1);
   });
 
+  it("translates in local-model mode with an empty model chain", async () => {
+    vi.useFakeTimers();
+    STATE.config.translationMode = "local-model";
+    STATE.config.models = [];
+    STATE.config.localEndpoint.baseUrl = "http://localhost:1234/v1";
+    browserMocks.sendMessage.mockResolvedValue(successfulTranslationResponse());
+    retryBlock(createBlock({ bottom: 120, left: 20, right: 120, top: 20 }));
+    await vi.advanceTimersByTimeAsync(200);
+    expect(browserMocks.sendMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not translate in a local mode without a server URL", async () => {
+    vi.useFakeTimers();
+    STATE.config.translationMode = "local-model";
+    STATE.config.models = [];
+    STATE.config.localEndpoint.baseUrl = "";
+    retryBlock(createBlock({ bottom: 120, left: 20, right: 120, top: 20 }));
+    await vi.advanceTimersByTimeAsync(200);
+    expect(browserMocks.sendMessage).not.toHaveBeenCalled();
+  });
+});
+
+describe("batch concurrency", () => {
   it("starts the next batch chunk only after the current chunk finishes", async () => {
     vi.useFakeTimers();
     const requests = Array.from({ length: 4 }, () => createDeferred<MlgTranslateResponse>());

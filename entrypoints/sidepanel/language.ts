@@ -5,6 +5,7 @@ import { populateModelSelects, refreshApiKeyFieldTranslations } from "./model";
 import { updateRatioLabel, setDefaultSaveLabel } from "./config";
 import { getTranslations, setCurrentLanguage, getCurrentLanguage } from "./translations";
 import { getCurrentOutputMode } from "./output";
+import { refreshConnectionSettings } from "./connection-settings";
 
 export async function loadLanguage(): Promise<"ja" | "en"> {
   const result = await browser.storage.local.get(UI_LANGUAGE_KEY);
@@ -52,11 +53,21 @@ function applyHeaderLabels(): void {
   elements.modelsHint.textContent = t.modelsHint;
   setText("localBaseUrlLabel", t.localBaseUrl);
   setText("localApiKeyLabel", t.localApiKey);
-  setText("localEndpointHint", t.localEndpointHint);
-  setText("translationModeLabel", t.translationMode);
-  setText("translationModeModelChain", t.translationModeModelChain);
-  setText("translationModePlamo", t.translationModePlamo);
-  setText("plamoModelLabel", t.plamoModel);
+  setText("connectionUseLabel", t.connectionUse);
+  setText("translationUseApi", t.translationUseApi);
+  setText("translationUseLocal", t.translationUseLocal);
+  setText("apiConnectionTitle", t.apiConnectionTitle);
+  setText("localConnectionTitle", t.customServerTitle);
+  setText("localConnectionCompatibility", t.customServerOpenAiCompatible);
+  setText("localApiKeySummaryLabel", t.customServerApiKey);
+  setText("apiConnectionTargetTitle", t.connectionTarget);
+  setText("localConnectionTargetTitle", t.connectionTarget);
+  setText("apiModelTitle", t.modelSection);
+  setText("localModelTitle", t.modelSection);
+  setText("localModePlamo", t.localModePlamo);
+  setText("localModeServer", t.localModeServer);
+  setText("localModelIdLabel", t.localModelId);
+  setText("localUrlRequired", t.localUrlRequired);
   setText("plamoModeHint", t.plamoModeHint);
   elements.ratioTitle.textContent = t.ratio;
   elements.ratioEnLabel.textContent = t.english;
@@ -108,5 +119,6 @@ export function applyLanguage(): void {
   elements.save.textContent = getTranslations().save;
   populateModelSelects();
   refreshApiKeyFieldTranslations();
+  refreshConnectionSettings();
   updateRatioLabel();
 }

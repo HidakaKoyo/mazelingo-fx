@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
+import { sanitizeHtmlFragment } from "./content-logic";
 import {
   buildTokenStream,
   collectElementTags,
@@ -142,6 +143,14 @@ describe("renderVariant / renderOriginal", () => {
     expect(span.textContent).toBe("¡Hola mundo!");
     renderOriginal(span);
     expect(span.textContent).toBe("Hello world");
+  });
+
+  it("keeps a superscript footnote when the sanitized variant matches the original tags", () => {
+    const html = '<sup class="reference"><a href="https://example.com">[1]</a></sup>';
+    const span = wrapContents(html);
+    renderVariant(span, sanitizeHtmlFragment(html));
+    expect(span.firstElementChild).toBe(span.querySelector("sup"));
+    expect(span.querySelector("sup > a")?.textContent).toBe("[1]");
   });
 
   it.each([

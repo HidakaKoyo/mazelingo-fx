@@ -28,22 +28,38 @@ describe("splitHtmlSentences", () => {
     expect(sentences.every((source) => /[\p{L}\p{N}]/u.test(plainText(source)))).toBe(true);
     expect(sentences.join("")).toBe(html);
   });
+});
 
-  it("keeps consecutive Wikipedia references with the preceding sentence", () => {
+describe("splitHtmlSentences bracket groups", () => {
+  it("separates consecutive Wikipedia references from the preceding sentence", () => {
     const html =
       'fully.<sup class="reference"><a href="#cite_note-1">[1]</a></sup><sup class="reference"><a href="#cite_note-2">[2]</a></sup> Effective improvement continues.';
     const sentences = splitHtmlSentences(html, "en");
     expect(sentences).toEqual([
-      'fully.<sup class="reference"><a href="#cite_note-1">[1]</a></sup><sup class="reference"><a href="#cite_note-2">[2]</a></sup>',
+      "fully.",
+      '<sup class="reference"><a href="#cite_note-1">[1]</a></sup><sup class="reference"><a href="#cite_note-2">[2]</a></sup>',
       " Effective improvement continues.",
     ]);
     expect(sentences.join("")).toBe(html);
   });
 
-  it("keeps a citation-needed reference with the preceding sentence", () => {
+  it("separates a citation-needed reference from the preceding sentence", () => {
     const html = "This claim is disputed.[citation needed] More text follows.";
     const sentences = splitHtmlSentences(html, "en");
-    expect(sentences).toEqual(["This claim is disputed.[citation needed]", " More text follows."]);
+    expect(sentences).toEqual([
+      "This claim is disputed.",
+      "[citation needed]",
+      " More text follows.",
+    ]);
     expect(sentences.join("")).toBe(html);
+  });
+
+  it("separates a Wikipedia edit link from a heading", () => {
+    const html =
+      'History<span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="#">edit</a><span class="mw-editsection-bracket">]</span></span>';
+    expect(splitHtmlSentences(html, "en")).toEqual([
+      "History",
+      '<span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="#">edit</a><span class="mw-editsection-bracket">]</span></span>',
+    ]);
   });
 });

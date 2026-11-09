@@ -2,8 +2,10 @@ const ABBREVIATION_RE = /\b(?:Dr|Jr|Mr|Mrs|Ms|Prof|Sr|St|vs)\.$/iu;
 const HTML_ENTITY_RE = /^&(?:#\d+|#x[\da-f]+|[a-z][\da-z]+);/iu;
 const PLACEHOLDER_RE = /⟦\d+⟧/gu;
 const TAG_OR_ENTITY_RE = /<[^>]*>|&(?:#\d+|#x[\da-f]+|[a-z][\da-z]+);/giu;
+const BRACKET_GROUP_RE = /\[[^\]\r\n]+\](?:\s*\[[^\]\r\n]+\])*/gu;
 
 interface VisibleHtml {
+  readonly rawStarts: readonly number[];
   readonly text: string;
   readonly rawEnds: readonly number[];
 }
@@ -43,18 +45,21 @@ function decodeEntity(entity: string): string {
 
 function pushVisible(
   text: string,
+  rawStart: number,
   rawEnd: number,
-  output: Readonly<{ text: string; rawEnds: readonly number[] }>,
-): { text: string; rawEnds: number[] } {
+  output: Readonly<{ text: string; rawEnds: readonly number[]; rawStarts: readonly number[] }>,
+): { text: string; rawEnds: number[]; rawStarts: number[] } {
   return {
     rawEnds: [...output.rawEnds, ...Array.from({ length: text.length }, () => rawEnd)],
+    rawStarts: [...output.rawStarts, ...Array.from({ length: text.length }, () => rawStart)],
     text: output.text + text,
   };
 }
 
 function visibleHtml(html: string): VisibleHtml {
-  let output = { text: "", rawEnds: [] as number[] };
+  let output = { text: "", rawEnds: [] as number[], rawStarts: [] as number[] };
   let index = 0;
+  let rawStart = 0;
   while (index < html.length) {
     if (html[index] === "<") {
       const tagEnd = findTagEnd(html, index);
@@ -67,13 +72,15 @@ function visibleHtml(html: string): VisibleHtml {
       const entity = HTML_ENTITY_RE.exec(html.slice(index))?.[0];
       if (entity !== undefined) {
         index += entity.length;
-        output = pushVisible(decodeEntity(entity), index, output);
+        output = pushVisible(decodeEntity(entity), rawStart, index, output);
+        rawStart = index;
         continue;
       }
     }
     const codePoint = String.fromCodePoint(html.codePointAt(index) ?? 0);
     index += codePoint.length;
-    output = pushVisible(codePoint, index, output);
+    output = pushVisible(codePoint, rawStart, index, output);
+    rawStart = index;
   }
   return output;
 }
@@ -113,6 +120,30 @@ function includeClosingTags(html: string, start: number): number {
   return end;
 }
 
+function splitBracketAffixes(source: string): string[] {
+  const visible = visibleHtml(source);
+  const matches = [...visible.text.matchAll(BRACKET_GROUP_RE)];
+  const prefix = matches.find((match) => /^\s*$/u.test(visible.text.slice(0, match.index)));
+  const suffix = matches.findLast((match) =>
+    /^\s*$/u.test(visible.text.slice((match.index ?? 0) + match[0].length)),
+  );
+  const prefixEnd = prefix === undefined ? 0 : (prefix.index ?? 0) + prefix[0].length;
+  const suffixStart = suffix?.index ?? visible.text.length;
+  if (prefixEnd >= suffixStart && prefix !== undefined && suffix !== undefined) return [source];
+
+  const boundaries = [
+    prefixEnd === 0 ? 0 : includeClosingTags(source, visible.rawEnds[prefixEnd - 1] ?? 0),
+    suffixStart === visible.text.length
+      ? source.length
+      : (visible.rawStarts[suffixStart] ?? source.length),
+  ];
+  return [
+    source.slice(0, boundaries[0]),
+    source.slice(boundaries[0], boundaries[1]),
+    source.slice(boundaries[1]),
+  ].filter((part) => part !== "");
+}
+
 export function splitHtmlSentences(html: string, language: "en" | "ja"): string[] {
   const visible = visibleHtml(html);
   if (!/[\p{L}\p{N}]/u.test(visible.text.replaceAll(PLACEHOLDER_RE, ""))) return [];
@@ -130,7 +161,7 @@ export function splitHtmlSentences(html: string, language: "en" | "ja"): string[
   }
   const trailing = html.slice(rawStart);
   if (result.length > 0) result[result.length - 1] += trailing;
-  return result;
+  return result.flatMap((source) => splitBracketAffixes(source));
 }
 
 export function plainText(html: string): string {
@@ -138,4 +169,8 @@ export function plainText(html: string): string {
     .replaceAll(TAG_OR_ENTITY_RE, (token) => (token.startsWith("&") ? decodeEntity(token) : ""))
     .replaceAll(PLACEHOLDER_RE, "")
     .trim();
+}
+
+export function translationText(html: string): string {
+  return plainText(html).replaceAll(BRACKET_GROUP_RE, "").trim();
 }

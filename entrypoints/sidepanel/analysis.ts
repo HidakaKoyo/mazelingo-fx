@@ -1,5 +1,5 @@
 import type { VocabAnalysis } from "@/utils/messages";
-import { escapeHtml } from "./el";
+import { escapeHtml } from "./util";
 import type { Translations } from "./translations";
 import type { DeepReadonly } from "./util";
 

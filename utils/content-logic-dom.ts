@@ -33,6 +33,8 @@ export const MLG_ALLOWED_HTML_TAGS = new Set([
   "s",
   "u",
   "mark",
+  "sup",
+  "sub",
 ]);
 export function compactUrlForSchemeCheck(value: unknown): string {
   if (typeof value !== "string") {
@@ -189,12 +191,10 @@ export function serializeCleanPart(html: string): string {
   replaceCloneAtomsWithPlaceholders(container);
   return container.innerHTML;
 }
-
 export function hasTranslatableText(cleanedHtml: string): boolean {
   const text = textFromContainer(cleanedHtml);
   return text.trim().length > 0;
 }
-
 export function stripHtmlTags(html: string): string {
   return textFromContainer(html);
 }
