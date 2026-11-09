@@ -1817,6 +1817,25 @@
             <div class="section" id="apiKeysSection"></div>
 
             <div class="section">
+              <label class="label" id="localBaseUrlLabel" for="localBaseUrl"
+                >ローカル接続先のベースURL</label
+              >
+              <input
+                id="localBaseUrl"
+                class="input"
+                type="url"
+                placeholder="http://127.0.0.1:1234/v1"
+              />
+              <label class="label" id="localApiKeyLabel" for="localApiKey" style="margin-top: 10px"
+                >APIキー（任意）</label
+              >
+              <input id="localApiKey" class="input" type="password" autocomplete="off" />
+              <div class="hint" id="localEndpointHint">
+                OpenAI互換サーバー用です。モデルチェーンへlocal/&lt;モデルID&gt;を入力します
+              </div>
+            </div>
+
+            <div class="section">
               <label class="label" id="modelsLabel">モデルチェーン</label>
               <div class="hint" style="margin-bottom: 8px; margin-top: 0" id="modelsHint">
                 保存済みのproviderキーを使い、取得できたモデル候補をprovider別に表示します

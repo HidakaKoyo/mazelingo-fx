@@ -9,6 +9,8 @@ export interface ProviderEntry {
   readonly apiKeyKey?: string;
   readonly stripPrefix?: string;
   readonly headers?: Readonly<Record<string, string>>;
+  readonly omitAuthorizationWhenApiKeyEmpty?: boolean;
+  readonly requestTimeoutMs?: number;
   /** Provider routing options applied only when requesting structured output. */
   readonly structuredOutputRouting?: Readonly<{
     readonly requireParameters?: boolean;

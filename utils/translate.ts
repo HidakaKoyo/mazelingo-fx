@@ -8,6 +8,8 @@
 import { namesFor, translateUncached } from "./translate-core";
 import type { ReadonlyTranslationBlock, TranslateDeps } from "./translate-core";
 import type { IndexedBlock, TranslatePayload, TranslationBlock } from "./messages";
+import { modelChainCacheContext } from "./translation-cache-key";
+import type { TranslationCacheContext } from "./translation-cache-key";
 
 interface CachedResolution {
   blocks: (TranslationBlock | null)[];
@@ -22,12 +24,13 @@ async function resolveCachedBlocks(
   source: ReadonlyArray<Readonly<{ html: string; index: number }>>,
   from: string,
   to: string,
+  cacheContext: Readonly<TranslationCacheContext>,
   deps: Readonly<TranslateDeps>,
 ): Promise<CachedResolution> {
   const blocks: (TranslationBlock | null)[] = Array.from({ length: source.length }, () => null);
   const uncachedIndices: number[] = [];
   const uncachedBlocks: IndexedBlock[] = [];
-  const lookups = source.map((item) => deps.cache.lookup(item.html, from, to));
+  const lookups = source.map((item) => deps.cache.lookup(item.html, from, to, cacheContext));
   const entries = await Promise.all(lookups);
   let i = 0;
   for (const item of source) {
@@ -49,6 +52,7 @@ async function storeFresh(
   fresh: ReadonlyArray<ReadonlyTranslationBlock | null>,
   from: string,
   to: string,
+  cacheContext: Readonly<TranslationCacheContext>,
   deps: Readonly<TranslateDeps>,
 ): Promise<void> {
   const stores: Promise<void>[] = [];
@@ -57,7 +61,9 @@ async function storeFresh(
     const html = idx === undefined ? undefined : htmlBlocks[idx];
     const block = fresh[i] ?? null;
     if (block !== null && block.sentences.length > 0 && html !== undefined) {
-      stores.push(deps.cache.store(html, from, to, { sentences: [...block.sentences] }));
+      stores.push(
+        deps.cache.store(html, from, to, cacheContext, { sentences: [...block.sentences] }),
+      );
     }
   }
   await Promise.all(stores);
@@ -93,10 +99,12 @@ export async function translateBatch(
   if (htmlBlocks.length === 0) {
     return { blocks: [] };
   }
+  const cacheContext = modelChainCacheContext(config.models);
   const resolution = await resolveCachedBlocks(
     htmlBlocks.map((html, index) => ({ html, index })),
     from,
     to,
+    cacheContext,
     deps,
   );
   if (resolution.uncachedBlocks.length === 0) {
@@ -104,6 +112,6 @@ export async function translateBatch(
   }
   const { fromName, toName } = namesFor(from, to);
   const fresh = await translateUncached(resolution.uncachedBlocks, fromName, toName, deps, config);
-  await storeFresh(htmlBlocks, resolution.uncachedIndices, fresh, from, to, deps);
+  await storeFresh(htmlBlocks, resolution.uncachedIndices, fresh, from, to, cacheContext, deps);
   return { blocks: buildFinalBlocks(resolution.blocks, resolution.uncachedIndices, fresh) };
 }

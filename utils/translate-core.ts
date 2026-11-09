@@ -10,6 +10,7 @@ import {
 } from "./translation";
 import type { Config } from "./config";
 import type { TranslationCache } from "./cache";
+import type { LocalEndpointConfig } from "./local-endpoint";
 import type { IndexedBlock, TranslationBlock, TranslationUnit } from "./messages";
 
 export interface TranslateDeps {
@@ -30,9 +31,10 @@ export interface BatchOutcome {
   accepted: ReadonlyMap<number, ReadonlyTranslationBlock>;
 }
 export type ReadonlyConfig = Readonly<
-  Omit<Config, "models" | "apiKeys"> & {
+  Omit<Config, "models" | "apiKeys" | "localEndpoint"> & {
     models: readonly string[];
     apiKeys: Readonly<Record<string, string>>;
+    localEndpoint: Readonly<LocalEndpointConfig>;
   }
 >;
 export type ReadonlyTranslationBlock = Readonly<{
@@ -62,6 +64,7 @@ async function resplitLongUnit(
       messages,
       config.apiKeys,
       TRANSLATION_SCHEMA,
+      config.localEndpoint,
     );
     const result = isResplitResult(llmResult) ? llmResult : undefined;
     const sentences = result?.blocks?.[0]?.sentences;
@@ -118,6 +121,7 @@ async function batchTranslate(
       messages,
       config.apiKeys,
       TRANSLATION_SCHEMA,
+      config.localEndpoint,
     );
     const rawBlocks = isRecord(llmResult) ? llmResult.blocks : undefined;
     const reconciliation = reconcileIndexedBlocks(rawBlocks, fromIndices);
@@ -167,6 +171,7 @@ async function retryOne(
       retryMessages,
       config.apiKeys,
       TRANSLATION_SCHEMA,
+      config.localEndpoint,
     );
     const rawBlocks = isRecord(retryResult) ? retryResult.blocks : undefined;
     const reconciliation = reconcileIndexedBlocks(rawBlocks, [index]);

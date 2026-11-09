@@ -34,7 +34,29 @@ describe("mergeConfig", () => {
     expect(merged.apiKeys).toEqual({ claude: "xyz" });
     expect(mergeConfig(base).apiKeys.gpt).toBe("abc");
   });
+});
 
+describe("mergeConfig local endpoint", () => {
+  it("preserves local endpoint fields when merging another setting", () => {
+    const saved = mergeConfig({
+      localEndpoint: { apiKey: "local-secret", baseUrl: "http://localhost:1234/v1" },
+    });
+    const merged = mergeConfig({ ...saved, enabled: false });
+    expect(merged.localEndpoint).toEqual(saved.localEndpoint);
+  });
+
+  it("defaults malformed local endpoint fields without retaining unknown values", () => {
+    const raw: unknown = {
+      localEndpoint: { apiKey: 123, baseUrl: null, extra: "discarded" },
+    };
+    if (!isMergeInput(raw)) throw new Error("expected a config object");
+    const result = mergeConfig(raw);
+    expect(result.localEndpoint).toEqual(DEFAULT_CONFIG.localEndpoint);
+    expect("extra" in result.localEndpoint).toBe(false);
+  });
+});
+
+describe("mergeConfig compatibility", () => {
   it("strips legacy positional config keys", () => {
     const raw: unknown = {
       providerId: "old",

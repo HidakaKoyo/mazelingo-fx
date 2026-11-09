@@ -17,6 +17,14 @@ export async function setLanguage(lang: "ja" | "en"): Promise<void> {
   applyLanguage();
 }
 
+function setText(id: string, text: string): void {
+  const element = document.querySelector<HTMLElement>(`#${CSS.escape(id)}`);
+  if (element === null) {
+    throw new Error(`Missing element: ${id}`);
+  }
+  element.textContent = text;
+}
+
 function applyHeaderLabels(): void {
   const t = getTranslations();
   document.title = t.title;
@@ -42,6 +50,9 @@ function applyHeaderLabels(): void {
   elements.addCurrentSiteExclude.textContent = t.addCurrentSite;
   elements.modelsLabel.textContent = t.models;
   elements.modelsHint.textContent = t.modelsHint;
+  setText("localBaseUrlLabel", t.localBaseUrl);
+  setText("localApiKeyLabel", t.localApiKey);
+  setText("localEndpointHint", t.localEndpointHint);
   elements.ratioTitle.textContent = t.ratio;
   elements.ratioEnLabel.textContent = t.english;
   elements.ratioJaLabel.textContent = t.japanese;

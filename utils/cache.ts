@@ -12,6 +12,8 @@
 import { CACHE_STORAGE_KEY } from "./keys";
 import { evictEntries } from "./evict";
 import type { TranslationBlock } from "./messages";
+import { buildTranslationCacheKey } from "./translation-cache-key";
+import type { TranslationCacheContext } from "./translation-cache-key";
 
 export interface CacheEntry {
   block: TranslationBlock;
@@ -36,10 +38,6 @@ export interface CacheConfig {
 export const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const CACHE_MAX_ENTRIES = 1000;
 
-export function buildCacheKey(html: string, from: string, to: string): string {
-  return `${from}:${to}:${html}`;
-}
-
 /**
  * Eviction: drop expired entries, then trim oldest beyond maxEntries.
  */
@@ -53,11 +51,17 @@ export function evictCache<T extends CacheEntry>(
 export interface TranslationCache {
   getCacheStats(): Promise<{ entries: number; bytes: number }>;
   clear(): Promise<void>;
-  lookup(html: string, from: string, to: string): Promise<CacheEntry | null>;
+  lookup(
+    html: string,
+    from: string,
+    to: string,
+    context: Readonly<TranslationCacheContext>,
+  ): Promise<CacheEntry | null>;
   store(
     html: string,
     from: string,
     to: string,
+    context: Readonly<TranslationCacheContext>,
     block: DeepReadonly<TranslationBlock>,
   ): Promise<void>;
   /** Await any pending debounced persistent write. */
@@ -174,8 +178,13 @@ class TranslationCacheImpl implements TranslationCache {
     return { entries: Object.keys(cache).length, bytes };
   }
 
-  async lookup(html: string, from: string, to: string): Promise<CacheEntry | null> {
-    const cacheKey = buildCacheKey(html, from, to);
+  async lookup(
+    html: string,
+    from: string,
+    to: string,
+    context: Readonly<TranslationCacheContext>,
+  ): Promise<CacheEntry | null> {
+    const cacheKey = buildTranslationCacheKey(html, from, to, context);
     const memEntry = this.memory.get(cacheKey);
     if (memEntry && Date.now() - memEntry.timestamp < this.cfg.ttlMs) {
       return memEntry;
@@ -193,9 +202,10 @@ class TranslationCacheImpl implements TranslationCache {
     html: string,
     from: string,
     to: string,
+    context: Readonly<TranslationCacheContext>,
     block: DeepReadonly<TranslationBlock>,
   ): Promise<void> {
-    const cacheKey = buildCacheKey(html, from, to);
+    const cacheKey = buildTranslationCacheKey(html, from, to, context);
     const entry: CacheEntry = {
       block: {
         sentences: block.sentences.map((s) => ({
