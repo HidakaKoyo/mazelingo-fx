@@ -16,6 +16,8 @@ import {
 } from "./llm-providers";
 import type { ResolvedProvider } from "./llm-providers";
 import type { ChatMessage, ProviderEntry } from "./llm-registry";
+import { resolveLocalProvider } from "./local-endpoint";
+import type { LocalEndpointConfig } from "./local-endpoint";
 
 export { LLM_REGISTRY, TRANSLATION_SCHEMA } from "./llm-registry";
 export { resolveProvider } from "./llm-providers";
@@ -26,6 +28,12 @@ const FORMAT_HANDLERS: Record<ProviderEntry["format"], { parse: (data: unknown) 
   google: { parse: parseGoogleResponse },
   openai: { parse: parseOpenAIResponse },
 };
+
+interface ReadonlyRequestOptions {
+  readonly body: string;
+  readonly headers: Readonly<Record<string, string>>;
+  readonly method: string;
+}
 
 export async function callLLM(
   provider: Readonly<ResolvedProvider>,
@@ -42,7 +50,10 @@ export async function callLLM(
 
   console.log(`[mlg:llm] calling ${modelName} (${provider.entry.format}) ${url}`);
   const startTime = performance.now();
-  const response = await fetch(url, options);
+  const response =
+    provider.entry.requestTimeoutMs === undefined
+      ? await fetch(url, options)
+      : await fetchWithTimeout(url, options, provider.entry.requestTimeoutMs);
   const elapsed = Math.round(performance.now() - startTime);
   if (!response.ok) {
     const text = await response.text();
@@ -56,6 +67,22 @@ export async function callLLM(
   const data: unknown = await response.json();
   console.log(`[mlg:llm] ${modelName} succeeded [${elapsed}ms]`);
   return handler.parse(data);
+}
+
+async function fetchWithTimeout(
+  url: string,
+  options: ReadonlyRequestOptions,
+  timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 function redactSecret(message: string, secret: string): string {
@@ -75,20 +102,22 @@ function buildFallbackChain(
   messages: readonly ChatMessage[],
   apiKeys: Readonly<Record<string, string>>,
   schema?: unknown,
+  localEndpoint?: Readonly<LocalEndpointConfig>,
 ): { chain: Promise<unknown>; errors: Error[] } {
   const errors: Error[] = [];
   let chain: Promise<unknown> = Promise.reject(
     new Error("No API keys available for any of the specified models"),
   );
   for (const modelName of models) {
-    const provider = resolveProvider(modelName);
+    const localProvider = resolveLocalProvider(modelName, localEndpoint);
+    const provider = localProvider ?? resolveProvider(modelName);
     if (!provider) {
       console.warn(`[mlg:llm] no provider for model: ${modelName}`);
       errors.push(new Error(`No provider found for model: ${modelName}`));
       continue;
     }
     const apiKeyKey = provider.entry.apiKeyKey ?? provider.prefix;
-    const apiKey = apiKeys[apiKeyKey];
+    const apiKey = localProvider === null ? apiKeys[apiKeyKey] : localEndpoint?.apiKey;
     if (apiKey === undefined) {
       console.log(`[mlg:llm] skipping ${modelName} (no API key for "${provider.prefix}")`);
       continue;
@@ -115,8 +144,9 @@ export function callLLMChain(
   messages: readonly ChatMessage[],
   apiKeys: Readonly<Record<string, string>>,
   schema?: unknown,
+  localEndpoint?: Readonly<LocalEndpointConfig>,
 ): Promise<unknown> {
-  const { chain, errors } = buildFallbackChain(models, messages, apiKeys, schema);
+  const { chain, errors } = buildFallbackChain(models, messages, apiKeys, schema, localEndpoint);
 
   // If every keyed model rejected, surface an aggregated error.
   return chain.catch(() => {

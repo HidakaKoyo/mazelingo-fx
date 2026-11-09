@@ -10,11 +10,14 @@
  * defaults were effectively dead anyway. This is the single source of truth.
  */
 import type { Language } from "./messages";
+import { DEFAULT_LOCAL_ENDPOINT, mergeLocalEndpoint } from "./local-endpoint";
+import type { LocalEndpointConfig } from "./local-endpoint";
 
 export interface Config {
   enabled: boolean;
   models: string[];
   apiKeys: Record<string, string>;
+  localEndpoint: LocalEndpointConfig;
   pageListInclude: string;
   pageListExclude: string;
   mixLanguage: boolean;
@@ -32,6 +35,7 @@ export const DEFAULT_CONFIG: Config = {
   englishRatio: 30,
   minTextLength: 5,
   mixLanguage: true,
+  localEndpoint: { ...DEFAULT_LOCAL_ENDPOINT },
   models: [],
   outputRatio: 20,
   pageListExclude: "",
@@ -49,9 +53,10 @@ export const DEFAULT_CONFIG: Config = {
  * removed on every merge so they never leak back into storage.
  */
 /** Readonly view of the partial config merge input, suitable as a parameter. */
-type MergeInput = Readonly<Omit<Partial<Config>, "models" | "apiKeys">> & {
+type MergeInput = Readonly<Omit<Partial<Config>, "models" | "apiKeys" | "localEndpoint">> & {
   models?: readonly string[];
   apiKeys?: Readonly<Record<string, string>>;
+  localEndpoint?: Readonly<Partial<LocalEndpointConfig>>;
 };
 
 export function mergeConfig(raw: Readonly<MergeInput> | null | undefined): Config {
@@ -63,6 +68,7 @@ export function mergeConfig(raw: Readonly<MergeInput> | null | undefined): Confi
     ...DEFAULT_CONFIG,
     ...safe,
     apiKeys: { ...DEFAULT_CONFIG.apiKeys, ...safe.apiKeys },
+    localEndpoint: mergeLocalEndpoint(safe.localEndpoint),
     models: [...models],
   };
   if ("providerId" in merged) {

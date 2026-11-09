@@ -10,6 +10,7 @@ flowchart LR
   Panel["共通UI\nFirefox Sidebar、Chrome Side Panel"] <--> BG
   BG <--> Storage
   BG --> Providers["OpenAI、Anthropic、Gemini、\nOpenRouter、DeepSeek、GLM"]
+  BG --> LocalEndpoint["利用者が設定した\nOpenAI互換接続先"]
   BG --> OpenAITTS["OpenAI TTS"]
 ```
 
@@ -50,6 +51,7 @@ LLM処理は、モデルの判定、要求の生成、応答の解析、プロ�
 - `utils/llm-registry.ts`：モデルの接頭辞、エンドポイント、形式、キーの対応
 - `utils/llm-providers.ts`：プロバイダー別の要求生成と応答解析
 - `utils/llm.ts`：プロバイダーの解決、通信、代替処理
+- `utils/local-endpoint.ts`：`local/`モデル用の接続先解決、URL組み立て、時間切れ設定
 - `utils/model-catalog.ts`：保存済みOpenRouterキーによる構造化翻訳対応モデルの取得と正規化
 - `utils/prompts.ts`：翻訳と解説のプロンプト
 - `utils/schemas.ts`：メッセージ内容の実行時検証
@@ -59,17 +61,18 @@ LLM処理は、モデルの判定、要求の生成、応答の解析、プロ�
 ローカル保存には`browser.storage.local`を使います。
 主なキーは`utils/keys.ts`で一元管理します。
 
-| キー                      | 内容                                          |
-| ------------------------- | --------------------------------------------- |
-| `mlg_config`              | APIキー、モデル、言語、混在率、対象サイトなど |
-| `mlg_translation_cache`   | 翻訳キャッシュ                                |
-| `mlg_norma_cache`         | Norma処理のキャッシュ                         |
-| `mlg_vocab`               | 語彙                                          |
-| `mlg_pending_explanation` | パネルをまたいで引き継ぐ文法解説の状態        |
-| `mlg_ui_language`         | UIの表示言語                                  |
-| `mlg_my_examples`         | 保存した利用例                                |
+| キー                      | 内容                                                          |
+| ------------------------- | ------------------------------------------------------------- |
+| `mlg_config`              | APIキー、モデル、ローカル接続先、言語、混在率、対象サイトなど |
+| `mlg_translation_cache`   | 翻訳キャッシュ                                                |
+| `mlg_norma_cache`         | Norma処理のキャッシュ                                         |
+| `mlg_vocab`               | 語彙                                                          |
+| `mlg_pending_explanation` | パネルをまたいで引き継ぐ文法解説の状態                        |
+| `mlg_ui_language`         | UIの表示言語                                                  |
+| `mlg_my_examples`         | 保存した利用例                                                |
 
 APIキーは、`mlg_config.apiKeys`へ平文で保存します。
+ローカル接続先のベースURLと任意のAPIキーは、`mlg_config.localEndpoint`へ保存します。
 アプリによる暗号化や、独自のバックエンドへの同期は行いません。
 
 ## ブラウザ固有処理の境界

@@ -9,7 +9,9 @@ import {
   type TranslationCache,
 } from "./cache";
 import { mergeConfig, type Config } from "./config";
+import type { LocalEndpointConfig } from "./local-endpoint";
 import type { TranslationBlock } from "./messages";
+import { modelChainCacheContext } from "./translation-cache-key";
 
 interface FakeCacheBackend extends CacheBackend {
   state: Record<string, unknown>;
@@ -81,9 +83,10 @@ function makeCacheBackend(): FakeCacheBackend {
   };
 }
 
-type ConfigOverrides = Readonly<Partial<Omit<Config, "models" | "apiKeys">>> & {
+type ConfigOverrides = Readonly<Partial<Omit<Config, "models" | "apiKeys" | "localEndpoint">>> & {
   readonly models?: readonly string[];
   readonly apiKeys?: Readonly<Record<string, string>>;
+  readonly localEndpoint?: Readonly<Partial<LocalEndpointConfig>>;
 };
 
 interface SetupOptions {
@@ -150,7 +153,7 @@ describe("translateBatch", () => {
 
 describe("translateBatch (caching)", () => {
   it("populates fresh results from the LLM and stores them in cache", async () => {
-    const { deps, llm, cache } = await setup();
+    const { deps, llm, cache, config } = await setup();
     const result = await translateBatch({ from: "en", htmlBlocks: ["<p>Hi</p>"], to: "ja" }, deps);
     expect(llm).toHaveBeenCalledTimes(1);
     // Default LLM mock echoes the html as the source and wraps text in <p>…
@@ -158,7 +161,7 @@ describe("translateBatch (caching)", () => {
       sentences: [{ source: "<p>Hi</p>", translation: "<p>「Hi」</p>" }],
     });
     // Cached for a subsequent call
-    const hit = await cache.lookup("<p>Hi</p>", "en", "ja");
+    const hit = await cache.lookup("<p>Hi</p>", "en", "ja", modelChainCacheContext(config.models));
     expect(hit?.block).toEqual(result.blocks[0]);
   });
 
@@ -166,8 +169,8 @@ describe("translateBatch (caching)", () => {
     const cached: TranslationBlock = {
       sentences: [{ source: "<p>Hi</p>", translation: "<p>こんにちは</p>" }],
     };
-    const { deps, llm, cache } = await setup();
-    await cache.store("<p>Hi</p>", "en", "ja", cached);
+    const { deps, llm, cache, config } = await setup();
+    await cache.store("<p>Hi</p>", "en", "ja", modelChainCacheContext(config.models), cached);
     const result = await translateBatch({ from: "en", htmlBlocks: ["<p>Hi</p>"], to: "ja" }, deps);
     expect(llm).not.toHaveBeenCalled();
     expect(result.blocks[0]).toEqual(cached);

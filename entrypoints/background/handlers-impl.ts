@@ -136,7 +136,13 @@ export async function explainSentence(payload: Readonly<ExplainSentencePayload>)
     sourceLang: payload.sourceLang,
     text,
   });
-  return callLLMChain(config.models, messages, config.apiKeys, SENTENCE_EXPLANATION_SCHEMA);
+  return callLLMChain(
+    config.models,
+    messages,
+    config.apiKeys,
+    SENTENCE_EXPLANATION_SCHEMA,
+    config.localEndpoint,
+  );
 }
 
 export async function feedback(payload: Readonly<FeedbackPayload>): Promise<unknown> {
@@ -146,6 +152,7 @@ export async function feedback(payload: Readonly<FeedbackPayload>): Promise<unkn
     buildFeedbackMessages(payload),
     config.apiKeys,
     FEEDBACK_SCHEMA,
+    config.localEndpoint,
   );
   if (!isFeedbackResult(rawResult)) {
     return { error: "Unexpected feedback response" };
@@ -210,6 +217,7 @@ export async function analyzeVocab(payload: Readonly<AnalyzeVocabPayload>): Prom
     buildVocabAnalysisMessages(payload.word),
     config.apiKeys,
     VOCAB_ANALYSIS_SCHEMA,
+    config.localEndpoint,
   );
 }
 
@@ -219,7 +227,13 @@ export async function generateQuiz(
   try {
     const config = await loadConfig();
     const messages = buildQuizMessages(payload.situation);
-    const result = await callLLMChain(config.models, messages, config.apiKeys, QUIZ_SCHEMA);
+    const result = await callLLMChain(
+      config.models,
+      messages,
+      config.apiKeys,
+      QUIZ_SCHEMA,
+      config.localEndpoint,
+    );
     if (!isQuizResult(result)) {
       return { error: "Unexpected quiz response" };
     }

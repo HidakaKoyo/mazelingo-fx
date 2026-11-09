@@ -18,6 +18,7 @@ interface FormatHandler {
     schema: unknown,
     extraHeaders?: Readonly<Record<string, string>>,
     structuredOutputRouting?: ProviderEntry["structuredOutputRouting"],
+    omitAuthorizationWhenApiKeyEmpty?: boolean,
   ) => LLMRequest;
   parse: (data: unknown) => unknown;
 }
@@ -100,6 +101,7 @@ function buildOpenAIRequest(
   schema: unknown,
   extraHeaders: Readonly<Record<string, string>> = {},
   structuredOutputRouting: ProviderEntry["structuredOutputRouting"],
+  omitAuthorizationWhenApiKeyEmpty = false,
 ): LLMRequest {
   const body: Record<string, unknown> = { messages, model: modelName };
   if (schema !== undefined) {
@@ -111,14 +113,17 @@ function buildOpenAIRequest(
       body.provider = { require_parameters: true };
     }
   }
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...extraHeaders,
+  };
+  if (apiKey !== "" || !omitAuthorizationWhenApiKeyEmpty) {
+    headers.Authorization = `Bearer ${apiKey}`;
+  }
   return {
     options: {
       body: JSON.stringify(body),
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        ...extraHeaders,
-      },
+      headers,
       method: "POST",
     },
     url: baseUrl,
@@ -146,6 +151,7 @@ function buildAnthropicRequest(
   _schema: unknown,
   _extraHeaders?: Readonly<Record<string, string>>,
   _structuredOutputRouting?: ProviderEntry["structuredOutputRouting"],
+  _omitAuthorizationWhenApiKeyEmpty?: boolean,
 ): LLMRequest {
   const systemMsg = messages.find((m: Readonly<ChatMessage>) => m.role === "system");
   const nonSystemMessages = messages.filter((m: Readonly<ChatMessage>) => m.role !== "system");
@@ -199,6 +205,7 @@ function buildGoogleRequest(
   schema: unknown,
   _extraHeaders?: Readonly<Record<string, string>>,
   _structuredOutputRouting?: ProviderEntry["structuredOutputRouting"],
+  _omitAuthorizationWhenApiKeyEmpty?: boolean,
 ): LLMRequest {
   const systemMsg = messages.find((m: Readonly<ChatMessage>) => m.role === "system");
   const nonSystemMessages = messages.filter((m: Readonly<ChatMessage>) => m.role !== "system");
@@ -272,6 +279,7 @@ export function buildLLMRequest(
     schema,
     provider.entry.headers,
     provider.entry.structuredOutputRouting,
+    provider.entry.omitAuthorizationWhenApiKeyEmpty,
   );
 }
 

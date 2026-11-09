@@ -48,6 +48,10 @@ export function collectFormState(): Config {
     apiKeys: collectApiKeys(),
     enabled: elements.enabled.checked,
     englishRatio: parseRatioInput(elements.englishRatio, 0),
+    localEndpoint: {
+      apiKey: elements.localApiKey.value,
+      baseUrl: elements.localBaseUrl.value,
+    },
     minTextLength: parseRatioInput(elements.minTextLength, DEFAULT_CONFIG.minTextLength),
     mixLanguage: elements.mixLanguage.checked,
     models: getSelectedModels(),

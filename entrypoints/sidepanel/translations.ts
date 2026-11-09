@@ -1,5 +1,4 @@
 export type Language = "ja" | "en";
-
 export const translations = {
   en: {
     addCurrentSite: "Add this site",
@@ -14,7 +13,7 @@ export const translations = {
     apiKeyLabelSuffix: "API key",
     apiKeyProviderOther: "Other / Custom",
     apiKeyProviderOtherHint:
-      "Other / Custom does not save or send this key. Select a supported provider, then choose Custom… under Model chain and enter that provider's model ID. Unsupported endpoints are not available.",
+      "Other / Custom does not save or send this key. For a local OpenAI-compatible endpoint, use the Local endpoint fields and enter local/<model ID> under Custom… in the model chain.",
     apiKeyProviderRequired: "Select a supported provider before saving this API key.",
     apiKeyProviderSelect: "Select provider",
     cacheClear: "Clear cache",
@@ -23,7 +22,7 @@ export const translations = {
       "Stores translations for 7 days to skip re-translating. A large cache can slow things down",
     cacheLabel: "Translation cache",
     cacheStats: (n: number, size: string): string => `${n} entries / ${size}`,
-    customModelPlaceholder: "Enter a model ID (e.g. openrouter/meta-llama/llama-3.3-70b-instruct)",
+    customModelPlaceholder: "Enter a model ID (e.g. local/default_model)",
     enable: "Enable translation",
     enableDesc: "Turn on automatic translation",
     english: "English",
@@ -47,6 +46,10 @@ export const translations = {
     includeList: "Pages to translate",
     includeListHint: "https://* matches all sites",
     japanese: "Japanese",
+    localApiKey: "API key (optional)",
+    localBaseUrl: "Local endpoint base URL",
+    localEndpointHint:
+      "For an OpenAI-compatible server. Enter local/<model ID> under Custom… in the model chain. Requests use /chat/completions.",
     minTextLength: "Min text length",
     minTextLengthHint: "Text shorter than this will not be translated",
     mixLanguage: "Mix languages",
@@ -151,7 +154,7 @@ export const translations = {
     apiKeyLabelSuffix: "APIキー",
     apiKeyProviderOther: "その他 / カスタム",
     apiKeyProviderOtherHint:
-      "その他 / カスタムでは、このキーを保存・送信しません。対応済みproviderを選び、モデルチェーンの「カスタム…」でそのproviderのモデルIDを手入力してください。未対応endpointには接続できません",
+      "その他 / カスタムでは、このキーを保存・送信しません。ローカルのOpenAI互換接続先は専用欄に設定し、モデルチェーンの「カスタム…」へlocal/<モデルID>を入力してください",
     apiKeyProviderRequired: "このAPIキーを保存するには、対応済みproviderを選択してください",
     apiKeyProviderSelect: "providerを選択",
     cacheClear: "キャッシュを削除",
@@ -159,7 +162,7 @@ export const translations = {
     cacheHint: "翻訳結果を7日間保存して再翻訳を省きます。溜まると動作が重くなることがあります",
     cacheLabel: "翻訳キャッシュ",
     cacheStats: (n: number, size: string): string => `${n}件 / ${size}`,
-    customModelPlaceholder: "モデルIDを入力（例: openrouter/meta-llama/llama-3.3-70b-instruct）",
+    customModelPlaceholder: "モデルIDを入力（例: local/default_model）",
     enable: "翻訳を有効にする",
     enableDesc: "自動翻訳機能をオンにします",
     english: "英語",
@@ -183,6 +186,10 @@ export const translations = {
     includeList: "翻訳するページ",
     includeListHint: "https://* で全サイトにマッチ",
     japanese: "日本語",
+    localApiKey: "APIキー（任意）",
+    localBaseUrl: "ローカル接続先のベースURL",
+    localEndpointHint:
+      "OpenAI互換サーバー用です。モデルチェーンの「カスタム…」へlocal/<モデルID>を入力します。要求は/chat/completionsへ送ります",
     minTextLength: "最小文字数",
     minTextLengthHint: "この文字数未満のテキストは翻訳しない",
     mixLanguage: "言語をミックス",

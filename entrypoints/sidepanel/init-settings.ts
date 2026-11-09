@@ -40,6 +40,8 @@ function initSettings(config: DeepReadonly<Config>): void {
   elements.minTextLength.value = String(config.minTextLength);
   elements.pageListInclude.value = config.pageListInclude ?? "";
   elements.pageListExclude.value = config.pageListExclude ?? "";
+  elements.localBaseUrl.value = config.localEndpoint.baseUrl;
+  elements.localApiKey.value = config.localEndpoint.apiKey;
   const models = config.models ?? [];
   elements.englishRatio.value = String(config.englishRatio);
   elements.outputRatio.value = String(config.outputRatio);
@@ -84,6 +86,8 @@ function initSettingsListeners(): void {
   });
   elements.pageListInclude.addEventListener("input", updateDirtyState);
   elements.pageListExclude.addEventListener("input", updateDirtyState);
+  elements.localBaseUrl.addEventListener("input", updateDirtyState);
+  elements.localApiKey.addEventListener("input", updateDirtyState);
   elements.addCurrentSiteInclude.addEventListener("click", () => {
     void addCurrentSiteTo(elements.pageListInclude);
   });
