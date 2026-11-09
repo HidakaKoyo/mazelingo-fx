@@ -1,7 +1,7 @@
 import { buildLocalEndpointUrl, LOCAL_REQUEST_TIMEOUT_MS } from "./local-endpoint";
 import type { LocalEndpointConfig } from "./local-endpoint";
 import type { IndexedBlock, Language, TranslationBlock } from "./messages";
-import { plainText, splitHtmlSentences } from "./plamo-segment";
+import { splitHtmlSentences, translationText } from "./plamo-segment";
 
 const MAX_CONCURRENT_REQUESTS = 8;
 const MAX_CONTEXT_CHARS = 500;
@@ -19,7 +19,7 @@ interface Limiter {
 
 export interface PlamoConfig {
   readonly localEndpoint: Readonly<LocalEndpointConfig>;
-  readonly plamoModel: string;
+  readonly localModelId: string;
 }
 
 const limiters = new Map<string, Limiter>();
@@ -129,11 +129,12 @@ async function translateUnit(
   endpoint: string,
   config: Readonly<PlamoConfig>,
 ): Promise<Readonly<{ source: string; translation: string }>> {
-  const text = plainText(source);
+  const text = translationText(source);
+  if (text === "") return { source, translation: source };
   const prompt = buildPfml3Prompt(text, from, to, context);
   const translation = await fetchCompletion(
     endpoint,
-    config.plamoModel,
+    config.localModelId,
     prompt,
     text,
     config.localEndpoint.apiKey,
@@ -153,7 +154,7 @@ async function translateBlock(
   let previous = "";
   const tasks = sources.map((source) => {
     const context = previous.slice(-MAX_CONTEXT_CHARS);
-    previous += plainText(source);
+    previous += translationText(source);
     return translateUnit(source, context, from, to, endpoint, config);
   });
   try {

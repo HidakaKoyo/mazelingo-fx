@@ -127,7 +127,10 @@ function markReaderFailure(block: HTMLElement): void {
 }
 
 export function startReaderMode(): void {
-  const hasTranslator = STATE.config.translationMode === "plamo" || STATE.config.models.length > 0;
+  const usesLocalTranslation = STATE.config.translationMode !== "model-chain";
+  const hasTranslator = usesLocalTranslation
+    ? STATE.config.localEndpoint.baseUrl.trim() !== ""
+    : STATE.config.models.length > 0;
   if (!STATE.config.enabled || !hasTranslator || !isPageAllowed()) return;
   if (STATE.mode === "reader") {
     cancelReaderMode();

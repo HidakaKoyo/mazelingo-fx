@@ -8,8 +8,13 @@
 import { namesFor, translateUncached } from "./translate-core";
 import type { ReadonlyTranslationBlock, TranslateDeps } from "./translate-core";
 import type { IndexedBlock, TranslatePayload, TranslationBlock } from "./messages";
+import { CUSTOM_MODEL_PREFIX } from "./local-endpoint";
 import { translatePlamoUncached } from "./plamo-translation";
-import { modelChainCacheContext, plamoCacheContext } from "./translation-cache-key";
+import {
+  localModelCacheContext,
+  modelChainCacheContext,
+  plamoCacheContext,
+} from "./translation-cache-key";
 import type { TranslationCacheContext } from "./translation-cache-key";
 
 interface CachedResolution {
@@ -102,8 +107,10 @@ export async function translateBatch(
   }
   const cacheContext =
     config.translationMode === "plamo"
-      ? plamoCacheContext(config.plamoModel, config.localEndpoint.baseUrl)
-      : modelChainCacheContext(config.models);
+      ? plamoCacheContext(config.localModelId, config.localEndpoint.baseUrl)
+      : config.translationMode === "local-model"
+        ? localModelCacheContext(config.localModelId, config.localEndpoint.baseUrl)
+        : modelChainCacheContext(config.models);
   const resolution = await resolveCachedBlocks(
     htmlBlocks.map((html, index) => ({ html, index })),
     from,
@@ -114,10 +121,14 @@ export async function translateBatch(
   if (resolution.uncachedBlocks.length === 0) {
     return { blocks: resolution.blocks };
   }
+  const translationConfig =
+    config.translationMode === "local-model"
+      ? { ...config, models: [`${CUSTOM_MODEL_PREFIX}${config.localModelId}`] }
+      : config;
   const fresh =
     config.translationMode === "plamo"
       ? await translatePlamoUncached(resolution.uncachedBlocks, from, to, config)
-      : await translateModelChain(resolution.uncachedBlocks, from, to, deps, config);
+      : await translateModelChain(resolution.uncachedBlocks, from, to, deps, translationConfig);
   await storeFresh(htmlBlocks, resolution.uncachedIndices, fresh, from, to, cacheContext, deps);
   return { blocks: buildFinalBlocks(resolution.blocks, resolution.uncachedIndices, fresh) };
 }

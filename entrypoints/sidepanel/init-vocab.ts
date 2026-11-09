@@ -1,5 +1,6 @@
 import type { VocabItem } from "@/utils/messages";
-import { elements, escapeHtml } from "./el";
+import { elements } from "./el";
+import { escapeHtml } from "./util";
 import { getTranslations } from "./translations";
 import { closeVocabModal, getCurrentModalWord, openVocabModal, renderAnalysis } from "./modal";
 import {

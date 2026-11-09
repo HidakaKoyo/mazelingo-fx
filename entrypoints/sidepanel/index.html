@@ -78,6 +78,59 @@
       .section:last-child {
         margin-bottom: 0;
       }
+      .connection-group {
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        background: #ffffff;
+      }
+      .connection-group > summary,
+      .api-key-row > summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 11px 12px;
+        cursor: pointer;
+        list-style: none;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .connection-group > summary::-webkit-details-marker,
+      .api-key-row > summary::-webkit-details-marker {
+        display: none;
+      }
+      .connection-status,
+      .api-key-row > summary span:last-child {
+        color: #6b7280;
+        font-size: 10px;
+        font-weight: 600;
+        text-align: right;
+      }
+      .connection-body {
+        padding: 0 12px 12px;
+      }
+      .connection-subsection {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid #f3f4f6;
+      }
+      .connection-subsection:first-child {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: 0;
+      }
+      .connection-subsection > .select + .label {
+        margin-top: 10px;
+      }
+      .connection-compatibility {
+        margin-left: 5px;
+        color: #6b7280;
+        font-size: 10px;
+        font-weight: 600;
+      }
+      .connection-warning {
+        color: #b45309;
+      }
       .label {
         display: block;
         font-size: 12px;
@@ -430,6 +483,9 @@
       }
       .api-key-row {
         margin-bottom: 10px;
+        border: 1px solid #f3f4f6;
+        border-radius: 12px;
+        padding: 0 10px 10px;
       }
       .api-key-row:last-child {
         margin-bottom: 0;
@@ -440,6 +496,18 @@
         font-weight: 700;
         color: #6b7280;
         margin-bottom: 4px;
+      }
+      .api-key-row:not([open]) {
+        padding-bottom: 0;
+      }
+      .api-key-delete {
+        margin-top: 6px;
+        border: 0;
+        background: transparent;
+        color: #b91c1c;
+        cursor: pointer;
+        font-size: 11px;
+        padding: 4px 0;
       }
       .api-key-row .api-key-wrap {
         position: relative;
@@ -467,6 +535,13 @@
       }
       .api-key-add-row {
         padding-top: 10px;
+        padding-right: 0;
+        padding-bottom: 0;
+        padding-left: 0;
+        border-right: 0;
+        border-bottom: 0;
+        border-left: 0;
+        border-radius: 0;
         border-top: 1px solid #f3f4f6;
       }
       .api-key-provider-select {
@@ -1814,99 +1889,146 @@
               ></textarea>
             </div>
 
-            <div class="section" id="apiKeysSection"></div>
-
             <div class="section">
-              <label class="label" id="translationModeLabel" for="translationMode"
-                >翻訳モード</label
-              >
-              <select id="translationMode" class="select">
-                <option id="translationModeModelChain" value="model-chain">モデルチェーン</option>
-                <option id="translationModePlamo" value="plamo">PLaMo</option>
+              <label class="label" id="connectionUseLabel" for="translationUse">翻訳に使う</label>
+              <select id="translationUse" class="select">
+                <option id="translationUseApi" value="api">プロバイダー</option>
+                <option id="translationUseLocal" value="local">カスタムサーバー</option>
               </select>
-              <label class="label" id="plamoModelLabel" for="plamoModel" style="margin-top: 10px"
-                >PLaMoのモデルID</label
-              >
-              <input id="plamoModel" class="input" type="text" value="default_model" />
-              <div class="hint" id="plamoModeHint">
-                PLaMoはローカル接続先の/completionsへ翻訳要求を送ります。訳文のリンクや強調は残りません。
-              </div>
             </div>
 
-            <div class="section">
-              <label class="label" id="localBaseUrlLabel" for="localBaseUrl"
-                >ローカル接続先のベースURL</label
-              >
-              <input
-                id="localBaseUrl"
-                class="input"
-                type="url"
-                placeholder="http://127.0.0.1:1234/v1"
-              />
-              <label class="label" id="localApiKeyLabel" for="localApiKey" style="margin-top: 10px"
-                >APIキー（任意）</label
-              >
-              <input id="localApiKey" class="input" type="password" autocomplete="off" />
-              <div class="hint" id="localEndpointHint">
-                OpenAI互換サーバー用です。モデルチェーンへlocal/&lt;モデルID&gt;を入力します
+            <details id="apiConnection" class="section connection-group">
+              <summary>
+                <span id="apiConnectionTitle">プロバイダー</span>
+                <span id="apiConnectionStatus" class="connection-status"></span>
+              </summary>
+              <div class="connection-body">
+                <div class="connection-subsection">
+                  <span class="label" id="apiConnectionTargetTitle">接続先</span>
+                  <div id="apiKeysSection"></div>
+                </div>
+                <div class="connection-subsection">
+                  <span class="label" id="apiModelTitle">モデル</span>
+                  <div class="hint" style="margin-bottom: 8px; margin-top: 0" id="modelsHint">
+                    保存済みのproviderキーを使い、取得できたモデル候補をprovider別に表示します
+                  </div>
+                  <span class="label" id="modelsLabel">モデルチェーン</span>
+                  <div class="model-chain">
+                    <div class="model-chain-row">
+                      <span class="model-chain-badge">1st</span>
+                      <div class="model-chain-control">
+                        <details id="modelMenu0" class="model-picker">
+                          <summary class="select"><span id="modelMenuTrigger0"></span></summary>
+                          <div id="modelMenuOptions0" class="model-picker-menu"></div>
+                        </details>
+                        <select id="model0" hidden></select>
+                        <input
+                          id="customModel0"
+                          class="input custom-model-input"
+                          type="text"
+                          hidden
+                        />
+                      </div>
+                    </div>
+                    <div class="model-chain-row">
+                      <span class="model-chain-badge">2nd</span>
+                      <div class="model-chain-control">
+                        <details id="modelMenu1" class="model-picker">
+                          <summary class="select"><span id="modelMenuTrigger1"></span></summary>
+                          <div id="modelMenuOptions1" class="model-picker-menu"></div>
+                        </details>
+                        <select id="model1" hidden></select>
+                        <input
+                          id="customModel1"
+                          class="input custom-model-input"
+                          type="text"
+                          hidden
+                        />
+                      </div>
+                    </div>
+                    <div class="model-chain-row">
+                      <span class="model-chain-badge">3rd</span>
+                      <div class="model-chain-control">
+                        <details id="modelMenu2" class="model-picker">
+                          <summary class="select"><span id="modelMenuTrigger2"></span></summary>
+                          <div id="modelMenuOptions2" class="model-picker-menu"></div>
+                        </details>
+                        <select id="model2" hidden></select>
+                        <input
+                          id="customModel2"
+                          class="input custom-model-input"
+                          type="text"
+                          hidden
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="model-catalog-actions">
+                    <button
+                      type="button"
+                      class="page-mode-button model-catalog-refresh"
+                      id="modelCatalogRefresh"
+                    >
+                      モデル候補を更新
+                    </button>
+                    <div
+                      class="hint model-catalog-status"
+                      id="modelCatalogStatus"
+                      aria-live="polite"
+                    ></div>
+                  </div>
+                </div>
               </div>
-            </div>
+            </details>
 
-            <div class="section">
-              <label class="label" id="modelsLabel">モデルチェーン</label>
-              <div class="hint" style="margin-bottom: 8px; margin-top: 0" id="modelsHint">
-                保存済みのproviderキーを使い、取得できたモデル候補をprovider別に表示します
-              </div>
-              <div class="model-chain">
-                <div class="model-chain-row">
-                  <span class="model-chain-badge">1st</span>
-                  <div class="model-chain-control">
-                    <details id="modelMenu0" class="model-picker">
-                      <summary class="select"><span id="modelMenuTrigger0"></span></summary>
-                      <div id="modelMenuOptions0" class="model-picker-menu"></div>
-                    </details>
-                    <select id="model0" hidden></select>
-                    <input id="customModel0" class="input custom-model-input" type="text" hidden />
+            <details id="localConnection" class="section connection-group">
+              <summary>
+                <span>
+                  <span id="localConnectionTitle">カスタムサーバー</span>
+                  <small id="localConnectionCompatibility" class="connection-compatibility"
+                    >OpenAI 互換</small
+                  >
+                </span>
+                <span id="localConnectionStatus" class="connection-status"></span>
+              </summary>
+              <div class="connection-body">
+                <div class="connection-subsection">
+                  <span class="label" id="localConnectionTargetTitle">接続先</span>
+                  <label class="label" id="localBaseUrlLabel" for="localBaseUrl"
+                    >サーバーの URL</label
+                  >
+                  <input
+                    id="localBaseUrl"
+                    class="input"
+                    type="url"
+                    placeholder="http://127.0.0.1:1234/v1"
+                  />
+                  <div class="hint connection-warning" id="localUrlRequired">
+                    サーバーの URL を入れてください
                   </div>
+                  <details id="localApiKeyRow" class="api-key-row">
+                    <summary>
+                      <span id="localApiKeySummaryLabel">API キー</span>
+                      <span id="localApiKeyStatus">未設定</span>
+                    </summary>
+                    <label class="label" id="localApiKeyLabel" for="localApiKey"
+                      >APIキー（任意）</label
+                    >
+                    <input id="localApiKey" class="input" type="password" autocomplete="off" />
+                  </details>
                 </div>
-                <div class="model-chain-row">
-                  <span class="model-chain-badge">2nd</span>
-                  <div class="model-chain-control">
-                    <details id="modelMenu1" class="model-picker">
-                      <summary class="select"><span id="modelMenuTrigger1"></span></summary>
-                      <div id="modelMenuOptions1" class="model-picker-menu"></div>
-                    </details>
-                    <select id="model1" hidden></select>
-                    <input id="customModel1" class="input custom-model-input" type="text" hidden />
-                  </div>
-                </div>
-                <div class="model-chain-row">
-                  <span class="model-chain-badge">3rd</span>
-                  <div class="model-chain-control">
-                    <details id="modelMenu2" class="model-picker">
-                      <summary class="select"><span id="modelMenuTrigger2"></span></summary>
-                      <div id="modelMenuOptions2" class="model-picker-menu"></div>
-                    </details>
-                    <select id="model2" hidden></select>
-                    <input id="customModel2" class="input custom-model-input" type="text" hidden />
-                  </div>
+                <div class="connection-subsection">
+                  <span class="label" id="localModelTitle">モデル</span>
+                  <select id="localMode" class="select">
+                    <option id="localModePlamo" value="plamo">PLaMo 3 Translate (翻訳専用)</option>
+                    <option id="localModeServer" value="local-model">汎用モデル</option>
+                  </select>
+                  <label class="label" id="localModelIdLabel" for="localModelId">モデルID</label>
+                  <input id="localModelId" class="input" type="text" value="default_model" />
+                  <div class="hint" id="plamoModeHint">訳文のリンクや強調は残りません</div>
                 </div>
               </div>
-              <div class="model-catalog-actions">
-                <button
-                  type="button"
-                  class="page-mode-button model-catalog-refresh"
-                  id="modelCatalogRefresh"
-                >
-                  モデル候補を更新
-                </button>
-                <div
-                  class="hint model-catalog-status"
-                  id="modelCatalogStatus"
-                  aria-live="polite"
-                ></div>
-              </div>
-            </div>
+            </details>
 
             <div class="section">
               <label class="label" id="ttsVoiceLabel" for="ttsVoice">音声</label>

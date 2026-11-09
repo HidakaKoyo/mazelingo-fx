@@ -18,8 +18,8 @@ export interface Config {
   models: string[];
   apiKeys: Record<string, string>;
   localEndpoint: LocalEndpointConfig;
-  translationMode: "model-chain" | "plamo";
-  plamoModel: string;
+  translationMode: "model-chain" | "plamo" | "local-model";
+  localModelId: string;
   pageListInclude: string;
   pageListExclude: string;
   mixLanguage: boolean;
@@ -39,7 +39,7 @@ export const DEFAULT_CONFIG: Config = {
   mixLanguage: true,
   localEndpoint: { ...DEFAULT_LOCAL_ENDPOINT },
   translationMode: "model-chain",
-  plamoModel: "default_model",
+  localModelId: "default_model",
   models: [],
   outputRatio: 20,
   pageListExclude: "",
@@ -61,6 +61,7 @@ type MergeInput = Readonly<Omit<Partial<Config>, "models" | "apiKeys" | "localEn
   models?: readonly string[];
   apiKeys?: Readonly<Record<string, string>>;
   localEndpoint?: Readonly<Partial<LocalEndpointConfig>>;
+  plamoModel?: unknown;
 };
 
 export function mergeConfig(raw: Readonly<MergeInput> | null | undefined): Config {
@@ -74,11 +75,16 @@ export function mergeConfig(raw: Readonly<MergeInput> | null | undefined): Confi
     apiKeys: { ...DEFAULT_CONFIG.apiKeys, ...safe.apiKeys },
     localEndpoint: mergeLocalEndpoint(safe.localEndpoint),
     models: [...models],
-    plamoModel:
-      typeof safe.plamoModel === "string" && safe.plamoModel.trim() !== ""
-        ? safe.plamoModel
-        : DEFAULT_CONFIG.plamoModel,
-    translationMode: safe.translationMode === "plamo" ? "plamo" : "model-chain",
+    localModelId:
+      typeof safe.localModelId === "string" && safe.localModelId.trim() !== ""
+        ? safe.localModelId
+        : typeof safe.plamoModel === "string" && safe.plamoModel.trim() !== ""
+          ? safe.plamoModel
+          : DEFAULT_CONFIG.localModelId,
+    translationMode:
+      safe.translationMode === "plamo" || safe.translationMode === "local-model"
+        ? safe.translationMode
+        : "model-chain",
   };
   if ("providerId" in merged) {
     delete merged.providerId;
@@ -88,6 +94,9 @@ export function mergeConfig(raw: Readonly<MergeInput> | null | undefined): Confi
   }
   if ("providerOptions" in merged) {
     delete merged.providerOptions;
+  }
+  if ("plamoModel" in merged) {
+    delete merged.plamoModel;
   }
   return merged;
 }

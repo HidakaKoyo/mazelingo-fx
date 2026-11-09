@@ -1,5 +1,6 @@
 import type { ProviderEntry } from "./llm-registry";
 
+export const CUSTOM_MODEL_PREFIX = "custom/";
 export const LOCAL_MODEL_PREFIX = "local/";
 export const LOCAL_REQUEST_TIMEOUT_MS = 120_000;
 
@@ -15,7 +16,7 @@ export const DEFAULT_LOCAL_ENDPOINT: LocalEndpointConfig = {
 
 export interface ResolvedLocalProvider {
   readonly entry: ProviderEntry;
-  readonly prefix: typeof LOCAL_MODEL_PREFIX;
+  readonly prefix: typeof CUSTOM_MODEL_PREFIX | typeof LOCAL_MODEL_PREFIX;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -52,7 +53,10 @@ export function resolveLocalProvider(
   modelName: string,
   config: Readonly<LocalEndpointConfig> | undefined,
 ): ResolvedLocalProvider | null {
-  if (!modelName.startsWith(LOCAL_MODEL_PREFIX) || modelName === LOCAL_MODEL_PREFIX) {
+  const prefix = ([CUSTOM_MODEL_PREFIX, LOCAL_MODEL_PREFIX] as const).find(
+    (candidate) => modelName.startsWith(candidate) && modelName !== candidate,
+  );
+  if (prefix === undefined) {
     return null;
   }
   const baseUrl =
@@ -66,8 +70,8 @@ export function resolveLocalProvider(
       format: "openai",
       omitAuthorizationWhenApiKeyEmpty: true,
       requestTimeoutMs: LOCAL_REQUEST_TIMEOUT_MS,
-      stripPrefix: LOCAL_MODEL_PREFIX,
+      stripPrefix: prefix,
     },
-    prefix: LOCAL_MODEL_PREFIX,
+    prefix,
   };
 }

@@ -10,7 +10,7 @@ flowchart LR
   Panel["共通UI\nFirefox Sidebar、Chrome Side Panel"] <--> BG
   BG <--> Storage
   BG --> Providers["OpenAI、Anthropic、Gemini、\nOpenRouter、DeepSeek、GLM"]
-  BG --> LocalEndpoint["利用者が設定した\nOpenAI互換接続先"]
+  BG --> LocalEndpoint["利用者が設定した\nカスタムサーバー (OpenAI 互換)"]
   BG --> OpenAITTS["OpenAI TTS"]
 ```
 
@@ -52,7 +52,7 @@ LLM処理は、モデルの判定、要求の生成、応答の解析、プロ�
 - `utils/llm-registry.ts`：モデルの接頭辞、エンドポイント、形式、キーの対応
 - `utils/llm-providers.ts`：プロバイダー別の要求生成と応答解析
 - `utils/llm.ts`：プロバイダーの解決、通信、代替処理
-- `utils/local-endpoint.ts`：`local/`モデル用の接続先解決、URL組み立て、時間切れ設定
+- `utils/local-endpoint.ts`：`custom/`モデル用の接続先解決、`local/`別名、URL組み立て、時間切れ設定
 - `utils/plamo-segment.ts`：HTMLを保った文分割とPLaMoへ渡す文章の抽出
 - `utils/plamo-translation.ts`：PFML3要求、PLaMo応答、時間切れ、接続先別の並列数制限
 - `utils/model-catalog.ts`：保存済みOpenRouterキーによる構造化翻訳対応モデルの取得と正規化
@@ -64,19 +64,19 @@ LLM処理は、モデルの判定、要求の生成、応答の解析、プロ�
 ローカル保存には`browser.storage.local`を使います。
 主なキーは`utils/keys.ts`で一元管理します。
 
-| キー                      | 内容                                                          |
-| ------------------------- | ------------------------------------------------------------- |
-| `mlg_config`              | APIキー、モデル、ローカル接続先、言語、混在率、対象サイトなど |
-| `mlg_translation_cache`   | 翻訳キャッシュ                                                |
-| `mlg_norma_cache`         | Norma処理のキャッシュ                                         |
-| `mlg_vocab`               | 語彙                                                          |
-| `mlg_pending_explanation` | パネルをまたいで引き継ぐ文法解説の状態                        |
-| `mlg_ui_language`         | UIの表示言語                                                  |
-| `mlg_my_examples`         | 保存した利用例                                                |
+| キー                      | 内容                                                            |
+| ------------------------- | --------------------------------------------------------------- |
+| `mlg_config`              | APIキー、モデル、カスタムサーバー、言語、混在率、対象サイトなど |
+| `mlg_translation_cache`   | 翻訳キャッシュ                                                  |
+| `mlg_norma_cache`         | Norma処理のキャッシュ                                           |
+| `mlg_vocab`               | 語彙                                                            |
+| `mlg_pending_explanation` | パネルをまたいで引き継ぐ文法解説の状態                          |
+| `mlg_ui_language`         | UIの表示言語                                                    |
+| `mlg_my_examples`         | 保存した利用例                                                  |
 
 APIキーは、`mlg_config.apiKeys`へ平文で保存します。
-ローカル接続先のベースURLと任意のAPIキーは、`mlg_config.localEndpoint`へ保存します。
-翻訳モードとPLaMoモデルIDは、`mlg_config.translationMode`と`mlg_config.plamoModel`へ保存します。
+カスタムサーバー (OpenAI 互換) のベースURLと任意のAPIキーは、`mlg_config.localEndpoint`へ保存します。
+翻訳モードとカスタムサーバーのモデルIDは、`mlg_config.translationMode`と`mlg_config.localModelId`へ保存します。0.6.0より前の`plamoModel`は読み込み時に`localModelId`へ移します。
 アプリによる暗号化や、独自のバックエンドへの同期は行いません。
 
 ## ブラウザ固有処理の境界

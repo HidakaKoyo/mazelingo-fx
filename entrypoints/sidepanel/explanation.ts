@@ -4,9 +4,9 @@ import type {
   GrammarPoint,
   OpenExplanationPayload,
 } from "@/utils/messages";
-import { elements, escapeHtml } from "./el";
+import { elements } from "./el";
 import { getTranslations, type Translations } from "./translations";
-import type { DeepReadonly } from "./util";
+import { escapeHtml, type DeepReadonly } from "./util";
 import { switchTab } from "./ui";
 import { clearPendingExplanation, explainSentence } from "./rpc";
 

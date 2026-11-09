@@ -39,6 +39,7 @@ function resetReaderTestState(): void {
   STATE.config.enabled = true;
   STATE.config.models = ["openrouter/deepseek/deepseek-chat"];
   STATE.config.translationMode = "model-chain";
+  STATE.config.localEndpoint.baseUrl = "";
   STATE.config.minTextLength = 1;
   STATE.config.pageListInclude = "*";
   STATE.config.pageListExclude = "";
@@ -99,12 +100,36 @@ it("sends document blocks one at a time in order", async () => {
 it("starts PLaMo reader mode with an empty model chain", () => {
   STATE.config.translationMode = "plamo";
   STATE.config.models = [];
+  STATE.config.localEndpoint.baseUrl = "http://localhost:1234/v1";
   const block = document.createElement("p");
   block.textContent = "Reader sentence";
   document.body.append(block);
   browserMocks.sendMessage.mockReturnValue(new Promise(() => {}));
   startReaderMode();
   expect(browserMocks.sendMessage).toHaveBeenCalledTimes(1);
+});
+
+it("starts local-model reader mode with an empty model chain", () => {
+  STATE.config.translationMode = "local-model";
+  STATE.config.models = [];
+  STATE.config.localEndpoint.baseUrl = "http://localhost:1234/v1";
+  const block = document.createElement("p");
+  block.textContent = "Reader sentence";
+  document.body.append(block);
+  browserMocks.sendMessage.mockReturnValue(new Promise(() => {}));
+  startReaderMode();
+  expect(browserMocks.sendMessage).toHaveBeenCalledTimes(1);
+});
+
+it("does not start a local reader mode without a server URL", () => {
+  STATE.config.translationMode = "local-model";
+  STATE.config.models = [];
+  STATE.config.localEndpoint.baseUrl = "";
+  const block = document.createElement("p");
+  block.textContent = "Reader sentence";
+  document.body.append(block);
+  startReaderMode();
+  expect(browserMocks.sendMessage).not.toHaveBeenCalled();
 });
 
 it("does not apply an in-flight response after cancellation", async () => {

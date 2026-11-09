@@ -4,7 +4,7 @@ import { buildPfml3Prompt, translatePlamoUncached } from "./plamo-translation";
 
 const config = {
   localEndpoint: { apiKey: "", baseUrl: "http://127.0.0.1:8765/v1" },
-  plamoModel: "default_model",
+  localModelId: "default_model",
 };
 
 function completion(text: string): Response {
@@ -86,6 +86,67 @@ describe("translatePlamoUncached", () => {
     expect(typeof prompt === "string" ? prompt : "").toContain(
       "<|plamo:tag|>context<|plamo:msg|>First sentence.",
     );
+  });
+});
+
+describe("translatePlamoUncached bracket groups", () => {
+  it("does not send separated references to PLaMo", async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(completion("訳")));
+    vi.stubGlobal("fetch", fetchMock);
+    const reference =
+      '<sup class="reference"><a href="#cite_note-1">[1]</a></sup><sup class="reference"><a href="#cite_note-2">[2]</a></sup>';
+    const result = await translatePlamoUncached(
+      [{ html: `fully.${reference} Effective improvement continues.`, i: 0 }],
+      "en",
+      "ja",
+      config,
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result[0]?.sentences[1]).toEqual({ source: reference, translation: reference });
+    expect(fetchMock.mock.calls.map((call) => requestBody(call).prompt)).not.toContainEqual(
+      expect.stringContaining("[1]"),
+    );
+  });
+});
+
+describe("translatePlamoUncached edit and inline bracket groups", () => {
+  it("preserves an edit link without sending it to PLaMo", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(completion("歴史"));
+    vi.stubGlobal("fetch", fetchMock);
+    const edit =
+      '<span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="#">edit</a><span class="mw-editsection-bracket">]</span></span>';
+    const result = await translatePlamoUncached(
+      [{ html: `History${edit}`, i: 0 }],
+      "en",
+      "ja",
+      config,
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(requestBody(fetchMock.mock.calls[0] ?? []).prompt).toContain(
+      "<|plamo:msg|>History<|plamo:tag|>output",
+    );
+    expect(result).toEqual([
+      {
+        sentences: [
+          { source: "History", translation: "歴史" },
+          { source: edit, translation: edit },
+        ],
+      },
+    ]);
+  });
+
+  it("removes an inline reference from the text sent to PLaMo", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(completion("訳"));
+    vi.stubGlobal("fetch", fetchMock);
+    await translatePlamoUncached(
+      [{ html: 'results,<sup class="reference"><a>[3]</a></sup> and is commonly employed.', i: 0 }],
+      "en",
+      "ja",
+      config,
+    );
+    const prompt = String(requestBody(fetchMock.mock.calls[0] ?? []).prompt);
+    expect(prompt).toContain("results, and is commonly employed.");
+    expect(prompt).not.toContain("[3]");
   });
 });
 

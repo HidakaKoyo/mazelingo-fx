@@ -78,11 +78,12 @@ describe("mergeConfig compatibility", () => {
 });
 
 describe("mergeConfig translation mode", () => {
-  it("preserves PLaMo settings while merging another setting", () => {
+  it("reads the pre-0.6 plamoModel field into localModelId", () => {
     const saved = mergeConfig({ plamoModel: "plamo-local", translationMode: "plamo" });
     const merged = mergeConfig({ ...saved, enabled: false });
     expect(merged.translationMode).toBe("plamo");
-    expect(merged.plamoModel).toBe("plamo-local");
+    expect(merged.localModelId).toBe("plamo-local");
+    expect("plamoModel" in merged).toBe(false);
   });
 
   it("defaults invalid or empty values", () => {
@@ -90,6 +91,22 @@ describe("mergeConfig translation mode", () => {
     if (!isMergeInput(raw)) throw new Error("expected a config object");
     const result = mergeConfig(raw);
     expect(result.translationMode).toBe("model-chain");
-    expect(result.plamoModel).toBe("default_model");
+    expect(result.localModelId).toBe("default_model");
   });
+
+  it.each(["model-chain", "plamo", "local-model"] as const)(
+    "round-trips the %s mode through stored JSON",
+    (translationMode) => {
+      const saved = mergeConfig({
+        localEndpoint: { apiKey: "secret", baseUrl: "http://localhost:1234/v1" },
+        localModelId: "local-id",
+        models: ["gpt-4.1-mini"],
+        translationMode,
+      });
+      const serialized: unknown = JSON.parse(JSON.stringify(saved));
+      if (!isMergeInput(serialized)) throw new Error("expected serialized config");
+      const loaded = mergeConfig(serialized);
+      expect(loaded).toEqual(saved);
+    },
+  );
 });

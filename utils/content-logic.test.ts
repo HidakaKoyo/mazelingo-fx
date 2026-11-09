@@ -56,6 +56,17 @@ describe("sanitizeHtmlFragment", () => {
     expect(sanitizeHtmlFragment('<a href="https://ok">link</a>')).toContain('href="https://ok"');
     expect(sanitizeHtmlFragment('<a href="javascript:alert(1)">x</a>')).not.toContain("javascript");
   });
+
+  it("keeps sup and sub without their attributes", () => {
+    expect(
+      sanitizeHtmlFragment(
+        '<sup class="reference" onclick="alert(1)"><a href="https://example.com">[1]</a></sup>',
+      ),
+    ).toBe('<sup><a href="https://example.com">[1]</a></sup>');
+    expect(sanitizeHtmlFragment('H<sub class="formula" onclick="alert(1)">2</sub>O')).toBe(
+      "H<sub>2</sub>O",
+    );
+  });
 });
 
 describe("cleanHtmlForTranslation", () => {

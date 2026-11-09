@@ -1,7 +1,7 @@
 import { browser } from "wxt/browser";
 import { MY_EXAMPLES_KEY } from "@/utils/keys";
-import { elements, escapeHtml } from "./el";
-import { isClosest, selectedTtsVoice, type DeepReadonly } from "./util";
+import { elements } from "./el";
+import { escapeHtml, isClosest, selectedTtsVoice, type DeepReadonly } from "./util";
 import { tts } from "./rpc";
 
 interface MyExample {

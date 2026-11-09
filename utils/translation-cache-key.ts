@@ -11,6 +11,10 @@ export function plamoCacheContext(model: string, baseUrl: string): TranslationCa
   return { mode: "plamo", model: `${model}\u0000${baseUrl.trim()}` };
 }
 
+export function localModelCacheContext(model: string, baseUrl: string): TranslationCacheContext {
+  return { mode: "local-model", model: `${model}\u0000${baseUrl.trim()}` };
+}
+
 export function buildTranslationCacheKey(
   html: string,
   from: string,

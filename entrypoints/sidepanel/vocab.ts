@@ -1,8 +1,7 @@
 import type { VocabItem } from "@/utils/messages";
-import { elements, escapeHtml } from "./el";
-import { isClosest } from "./util";
+import { elements } from "./el";
 import { getTranslations, type Translations } from "./translations";
-import type { DeepReadonly } from "./util";
+import { escapeHtml, isClosest, type DeepReadonly } from "./util";
 import {
   analyzeVocab as rpcAnalyze,
   addVocabRpc,

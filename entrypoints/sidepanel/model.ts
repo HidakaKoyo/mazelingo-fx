@@ -342,7 +342,9 @@ function apiKeyKeysToRender(apiKeys: Readonly<Record<string, string>>): string[]
   );
   return [
     ...knownKeys.filter((key) => (apiKeys[key] ?? "").trim() !== ""),
-    ...Object.keys(apiKeys).filter((key) => !knownKeys.includes(key)),
+    ...Object.keys(apiKeys).filter(
+      (key) => !knownKeys.includes(key) && (apiKeys[key] ?? "").trim() !== "",
+    ),
   ];
 }
 
@@ -362,19 +364,44 @@ function providerName(apiKeyKey: string): string {
   return PROVIDER_NAMES[apiKeyKey] ?? apiKeyKey;
 }
 
+function buildSavedApiKeySummary(name: string, connected: string): HTMLElement {
+  const summary = document.createElement("summary");
+  const provider = document.createElement("span");
+  provider.textContent = name;
+  const status = document.createElement("span");
+  status.dataset.apiKeyConnected = "true";
+  status.textContent = connected;
+  summary.append(provider, status);
+  return summary;
+}
+
+function buildApiKeyDelete(row: HTMLElement, onChange: () => void): HTMLButtonElement {
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "api-key-delete";
+  remove.dataset.apiKeyDelete = "true";
+  remove.textContent = getTranslations().apiKeyDelete;
+  remove.addEventListener("click", () => {
+    row.remove();
+    renderApiKeyFields([], collectApiKeys(), onChange);
+    onChange();
+  });
+  return remove;
+}
+
 function buildApiKeyRow(
   apiKeyKey: string,
   apiKeys: Readonly<Record<string, string>>,
   onChange: () => void,
 ): HTMLElement {
-  const row = document.createElement("div");
+  const row = document.createElement("details");
   row.className = "api-key-row";
 
   const name = providerName(apiKeyKey);
   const t = getTranslations();
   const label = document.createElement("label");
   label.dataset.apiKeyLabel = apiKeyKey;
-  label.textContent = `${name} ${t.apiKeyLabelSuffix}`;
+  label.textContent = t.apiKeyLabelSuffix;
   label.setAttribute("for", `apikey-${apiKeyKey}`);
 
   const wrap = document.createElement("div");
@@ -401,9 +428,11 @@ function buildApiKeyRow(
 
   wrap.append(input);
   wrap.append(toggle);
+  row.append(buildSavedApiKeySummary(name, t.apiKeyConnected));
   row.append(label);
   row.append(wrap);
   row.append(hint);
+  row.append(buildApiKeyDelete(row, onChange));
   return row;
 }
 
@@ -565,8 +594,17 @@ export function refreshApiKeyFieldTranslations(): void {
   elements.apiKeysSection
     .querySelectorAll<HTMLLabelElement>("label[data-api-key-label]")
     .forEach((label) => {
-      const providerKey = label.dataset.apiKeyLabel ?? "";
-      label.textContent = `${providerName(providerKey)} ${t.apiKeyLabelSuffix}`;
+      label.textContent = t.apiKeyLabelSuffix;
+    });
+  elements.apiKeysSection
+    .querySelectorAll<HTMLElement>("[data-api-key-connected]")
+    .forEach((status) => {
+      status.textContent = t.apiKeyConnected;
+    });
+  elements.apiKeysSection
+    .querySelectorAll<HTMLButtonElement>("[data-api-key-delete]")
+    .forEach((button) => {
+      button.textContent = t.apiKeyDelete;
     });
   elements.apiKeysSection
     .querySelectorAll<HTMLInputElement>("input[data-prefix]")

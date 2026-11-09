@@ -39,6 +39,8 @@ const elTags = {
   langJa: "button",
   localApiKey: "input",
   localBaseUrl: "input",
+  localMode: "select",
+  localModelId: "input",
   minTextLength: "input",
   minTextLengthHint: "div",
   minTextLengthLabel: "label",
@@ -58,7 +60,7 @@ const elTags = {
   model1: "select",
   model2: "select",
   modelsHint: "div",
-  modelsLabel: "label",
+  modelsLabel: "span",
   myExAddAnswer1: "input",
   myExAddAnswer2: "input",
   myExAddAnswer3: "input",
@@ -103,7 +105,6 @@ const elTags = {
   outputTypeQuizLabel: "span",
   pageListExclude: "textarea",
   pageListInclude: "textarea",
-  plamoModel: "input",
   panelTitle: "span",
   quizNextBtn: "button",
   quizPanel: "div",
@@ -126,7 +127,7 @@ const elTags = {
   tabOutput: "button",
   tabSettings: "button",
   translateButtons: "input",
-  translationMode: "select",
+  translationUse: "select",
   translateButtonsDesc: "span",
   translateButtonsTitle: "span",
   ttsPreviewBtn: "button",
@@ -186,6 +187,8 @@ export const elements = {
   langJa: getEl("langJa"),
   localApiKey: getEl("localApiKey"),
   localBaseUrl: getEl("localBaseUrl"),
+  localMode: getEl("localMode"),
+  localModelId: getEl("localModelId"),
   minTextLength: getEl("minTextLength"),
   minTextLengthHint: getEl("minTextLengthHint"),
   minTextLengthLabel: getEl("minTextLengthLabel"),
@@ -250,7 +253,6 @@ export const elements = {
   outputTypeQuizLabel: getEl("outputTypeQuizLabel"),
   pageListExclude: getEl("pageListExclude"),
   pageListInclude: getEl("pageListInclude"),
-  plamoModel: getEl("plamoModel"),
   panelTitle: getEl("panelTitle"),
   quizNextBtn: getEl("quizNextBtn"),
   quizPanel: getEl("quizPanel"),
@@ -273,7 +275,7 @@ export const elements = {
   tabOutput: getEl("tabOutput"),
   tabSettings: getEl("tabSettings"),
   translateButtons: getEl("translateButtons"),
-  translationMode: getEl("translationMode"),
+  translationUse: getEl("translationUse"),
   translateButtonsDesc: getEl("translateButtonsDesc"),
   translateButtonsTitle: getEl("translateButtonsTitle"),
   ttsPreviewBtn: getEl("ttsPreviewBtn"),
@@ -292,9 +294,3 @@ export const elements = {
   vocabSuggestSection: getEl("vocabSuggestSection"),
   vocabTrackerTitle: getEl("vocabTrackerTitle"),
 };
-
-export function escapeHtml(str: string): string {
-  const div = document.createElement("div");
-  div.textContent = str ?? "";
-  return div.innerHTML;
-}

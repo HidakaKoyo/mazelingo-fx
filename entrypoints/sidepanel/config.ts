@@ -52,7 +52,7 @@ export function collectFormState(): Config {
       apiKey: elements.localApiKey.value,
       baseUrl: elements.localBaseUrl.value,
     },
-    plamoModel: elements.plamoModel.value,
+    localModelId: elements.localModelId.value,
     minTextLength: parseRatioInput(elements.minTextLength, DEFAULT_CONFIG.minTextLength),
     mixLanguage: elements.mixLanguage.checked,
     models: getSelectedModels(),
@@ -60,7 +60,12 @@ export function collectFormState(): Config {
     pageListExclude: elements.pageListExclude.value,
     pageListInclude: elements.pageListInclude.value,
     translateButtons: elements.translateButtons.checked,
-    translationMode: elements.translationMode.value === "plamo" ? "plamo" : "model-chain",
+    translationMode:
+      elements.translationUse.value === "api"
+        ? "model-chain"
+        : elements.localMode.value === "local-model"
+          ? "local-model"
+          : "plamo",
     ttsVoice: selectedTtsVoice(),
   };
 }

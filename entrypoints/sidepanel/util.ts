@@ -35,6 +35,12 @@ export function stableStringify(value: unknown): string {
   return JSON.stringify(sortObject(value)) ?? "";
 }
 
+export function escapeHtml(str: string): string {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 export function getProviderPrefix(modelName: string): string | null {
   return resolveProvider(modelName)?.prefix ?? null;
 }
