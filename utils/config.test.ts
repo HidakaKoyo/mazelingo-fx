@@ -76,3 +76,20 @@ describe("mergeConfig compatibility", () => {
     expect(result.minTextLength).toBe(5);
   });
 });
+
+describe("mergeConfig translation mode", () => {
+  it("preserves PLaMo settings while merging another setting", () => {
+    const saved = mergeConfig({ plamoModel: "plamo-local", translationMode: "plamo" });
+    const merged = mergeConfig({ ...saved, enabled: false });
+    expect(merged.translationMode).toBe("plamo");
+    expect(merged.plamoModel).toBe("plamo-local");
+  });
+
+  it("defaults invalid or empty values", () => {
+    const raw: unknown = { plamoModel: "", translationMode: "unknown" };
+    if (!isMergeInput(raw)) throw new Error("expected a config object");
+    const result = mergeConfig(raw);
+    expect(result.translationMode).toBe("model-chain");
+    expect(result.plamoModel).toBe("default_model");
+  });
+});

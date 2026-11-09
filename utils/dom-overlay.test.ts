@@ -32,6 +32,13 @@ function el(html: string): HTMLElement {
   return first;
 }
 
+function wrapContents(html: string): HTMLElement {
+  const root = el(`<div>${html}</div>`);
+  const range = document.createRange();
+  range.selectNodeContents(root);
+  return wrapRange(range);
+}
+
 describe("isMlgIgnoredElement / isMlgAtom", () => {
   it("ignores script/style and aria-hidden", () => {
     expect(isMlgIgnoredElement(el("<script>x</script>"))).toBe(true);
@@ -135,6 +142,29 @@ describe("renderVariant / renderOriginal", () => {
     expect(span.textContent).toBe("¡Hola mundo!");
     renderOriginal(span);
     expect(span.textContent).toBe("Hello world");
+  });
+
+  it.each([
+    ["bold", "<b>Machine translation</b> is the use of software.", "b"],
+    ["link", '<a href="/wiki/Machine_translation">Machine translation</a> is useful.', "a"],
+    [
+      "reference",
+      '<sup class="reference"><a href="#cite_note-1">[1]</a></sup> Effective improvement.',
+      "sup",
+    ],
+  ])("renders fallback text outside an initial %s element", (_name, html, selector) => {
+    const span = wrapContents(html);
+    renderVariant(span, "翻訳された文章です。");
+    expect(span.firstChild).toBeInstanceOf(Text);
+    expect(span.firstChild?.textContent).toBe("翻訳された文章です。");
+    expect(span.querySelector(selector)?.textContent).toBe("");
+  });
+
+  it("keeps fallback text inside a single shared italic parent", () => {
+    const span = wrapContents("<i>Everything is italic.</i>");
+    renderVariant(span, "すべて斜体です。");
+    expect(span.querySelector("i")?.textContent).toBe("すべて斜体です。");
+    expect(span.firstChild).toBe(span.querySelector("i"));
   });
 });
 

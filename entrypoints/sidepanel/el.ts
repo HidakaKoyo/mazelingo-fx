@@ -5,7 +5,6 @@ export interface ModelControl {
   menuOptions: HTMLDivElement;
   menuTrigger: HTMLSpanElement;
 }
-
 type ElOf<T extends keyof HTMLElementTagNameMap> = HTMLElementTagNameMap[T];
 
 const elTags = {
@@ -104,6 +103,7 @@ const elTags = {
   outputTypeQuizLabel: "span",
   pageListExclude: "textarea",
   pageListInclude: "textarea",
+  plamoModel: "input",
   panelTitle: "span",
   quizNextBtn: "button",
   quizPanel: "div",
@@ -126,6 +126,7 @@ const elTags = {
   tabOutput: "button",
   tabSettings: "button",
   translateButtons: "input",
+  translationMode: "select",
   translateButtonsDesc: "span",
   translateButtonsTitle: "span",
   ttsPreviewBtn: "button",
@@ -249,6 +250,7 @@ export const elements = {
   outputTypeQuizLabel: getEl("outputTypeQuizLabel"),
   pageListExclude: getEl("pageListExclude"),
   pageListInclude: getEl("pageListInclude"),
+  plamoModel: getEl("plamoModel"),
   panelTitle: getEl("panelTitle"),
   quizNextBtn: getEl("quizNextBtn"),
   quizPanel: getEl("quizPanel"),
@@ -271,6 +273,7 @@ export const elements = {
   tabOutput: getEl("tabOutput"),
   tabSettings: getEl("tabSettings"),
   translateButtons: getEl("translateButtons"),
+  translationMode: getEl("translationMode"),
   translateButtonsDesc: getEl("translateButtonsDesc"),
   translateButtonsTitle: getEl("translateButtonsTitle"),
   ttsPreviewBtn: getEl("ttsPreviewBtn"),

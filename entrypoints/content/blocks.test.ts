@@ -93,6 +93,7 @@ function resetBlockTestState(): void {
   STATE.blockTranslateTimer = null;
   STATE.config.enabled = true;
   STATE.config.models = ["openrouter/deepseek/deepseek-chat"];
+  STATE.config.translationMode = "model-chain";
   STATE.config.pageListInclude = "*";
   STATE.config.pageListExclude = "";
   STATE.intersectionObserver = null;
@@ -179,6 +180,16 @@ describe("reader recovery", () => {
 });
 
 describe("batch concurrency", () => {
+  it("translates in PLaMo mode with an empty model chain", async () => {
+    vi.useFakeTimers();
+    STATE.config.translationMode = "plamo";
+    STATE.config.models = [];
+    browserMocks.sendMessage.mockResolvedValue(successfulTranslationResponse());
+    retryBlock(createBlock({ bottom: 120, left: 20, right: 120, top: 20 }));
+    await vi.advanceTimersByTimeAsync(200);
+    expect(browserMocks.sendMessage).toHaveBeenCalledTimes(1);
+  });
+
   it("starts the next batch chunk only after the current chunk finishes", async () => {
     vi.useFakeTimers();
     const requests = Array.from({ length: 4 }, () => createDeferred<MlgTranslateResponse>());

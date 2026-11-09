@@ -153,6 +153,22 @@ function findFirstText(node: Node): Text | null {
   return null;
 }
 
+function commonTextParent(node: Node): ParentNode | null {
+  const textNodes: Text[] = [];
+  function visit(current: Node): void {
+    mlgChildNodes(current).forEach((child) => {
+      if (child instanceof Text && child.data.trim() !== "") {
+        textNodes.push(child);
+      } else if (child instanceof Element && !isMlgAtom(child)) {
+        visit(child);
+      }
+    });
+  }
+  visit(node);
+  const parent = textNodes[0]?.parentNode;
+  return parent && textNodes.every((textNode) => textNode.parentNode === parent) ? parent : null;
+}
+
 function renderFallbackVariant(
   original: DocumentFragment,
   variant: DocumentFragment,
@@ -164,8 +180,8 @@ function renderFallbackVariant(
     throw new Error("[mlg:overlay] ownerDocument is required");
   }
   const firstText = findFirstText(original);
-  const targetParent = firstText?.parentNode ?? original;
-  const targetBefore = firstText?.nextSibling ?? null;
+  const targetParent = commonTextParent(original) ?? original;
+  const targetBefore = targetParent === original ? null : firstText?.nextSibling;
   const ownedNumbers = Array.isArray(span.mlgAtomNumbers) ? span.mlgAtomNumbers : [];
   const ownedAtoms = ownedNumbers
     .map((number) => [number, atoms?.get(number)] as const)
@@ -176,11 +192,12 @@ function renderFallbackVariant(
       atom.remove();
     }
   });
+  const insertionBefore = targetParent === original ? original.firstChild : targetBefore;
   const usedAtoms = new Set<number>();
   appendTextWithAtoms(
     documentRef,
     targetParent,
-    targetBefore?.parentNode === targetParent ? targetBefore : null,
+    insertionBefore?.parentNode === targetParent ? insertionBefore : null,
     variant.textContent ?? "",
     atoms,
     usedAtoms,
