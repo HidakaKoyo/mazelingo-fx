@@ -8,7 +8,8 @@
 import { namesFor, translateUncached } from "./translate-core";
 import type { ReadonlyTranslationBlock, TranslateDeps } from "./translate-core";
 import type { IndexedBlock, TranslatePayload, TranslationBlock } from "./messages";
-import { modelChainCacheContext } from "./translation-cache-key";
+import { translatePlamoUncached } from "./plamo-translation";
+import { modelChainCacheContext, plamoCacheContext } from "./translation-cache-key";
 import type { TranslationCacheContext } from "./translation-cache-key";
 
 interface CachedResolution {
@@ -99,7 +100,10 @@ export async function translateBatch(
   if (htmlBlocks.length === 0) {
     return { blocks: [] };
   }
-  const cacheContext = modelChainCacheContext(config.models);
+  const cacheContext =
+    config.translationMode === "plamo"
+      ? plamoCacheContext(config.plamoModel, config.localEndpoint.baseUrl)
+      : modelChainCacheContext(config.models);
   const resolution = await resolveCachedBlocks(
     htmlBlocks.map((html, index) => ({ html, index })),
     from,
@@ -110,8 +114,21 @@ export async function translateBatch(
   if (resolution.uncachedBlocks.length === 0) {
     return { blocks: resolution.blocks };
   }
-  const { fromName, toName } = namesFor(from, to);
-  const fresh = await translateUncached(resolution.uncachedBlocks, fromName, toName, deps, config);
+  const fresh =
+    config.translationMode === "plamo"
+      ? await translatePlamoUncached(resolution.uncachedBlocks, from, to, config)
+      : await translateModelChain(resolution.uncachedBlocks, from, to, deps, config);
   await storeFresh(htmlBlocks, resolution.uncachedIndices, fresh, from, to, cacheContext, deps);
   return { blocks: buildFinalBlocks(resolution.blocks, resolution.uncachedIndices, fresh) };
+}
+
+function translateModelChain(
+  blocks: readonly Readonly<IndexedBlock>[],
+  from: "en" | "ja",
+  to: "en" | "ja",
+  deps: Readonly<TranslateDeps>,
+  config: Parameters<typeof translateUncached>[4],
+): Promise<readonly (ReadonlyTranslationBlock | null)[]> {
+  const { fromName, toName } = namesFor(from, to);
+  return translateUncached(blocks, fromName, toName, deps, config);
 }

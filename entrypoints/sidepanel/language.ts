@@ -53,6 +53,11 @@ function applyHeaderLabels(): void {
   setText("localBaseUrlLabel", t.localBaseUrl);
   setText("localApiKeyLabel", t.localApiKey);
   setText("localEndpointHint", t.localEndpointHint);
+  setText("translationModeLabel", t.translationMode);
+  setText("translationModeModelChain", t.translationModeModelChain);
+  setText("translationModePlamo", t.translationModePlamo);
+  setText("plamoModelLabel", t.plamoModel);
+  setText("plamoModeHint", t.plamoModeHint);
   elements.ratioTitle.textContent = t.ratio;
   elements.ratioEnLabel.textContent = t.english;
   elements.ratioJaLabel.textContent = t.japanese;

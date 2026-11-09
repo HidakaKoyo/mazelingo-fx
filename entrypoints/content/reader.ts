@@ -127,7 +127,8 @@ function markReaderFailure(block: HTMLElement): void {
 }
 
 export function startReaderMode(): void {
-  if (!STATE.config.enabled || STATE.config.models.length === 0 || !isPageAllowed()) return;
+  const hasTranslator = STATE.config.translationMode === "plamo" || STATE.config.models.length > 0;
+  if (!STATE.config.enabled || !hasTranslator || !isPageAllowed()) return;
   if (STATE.mode === "reader") {
     cancelReaderMode();
     return;

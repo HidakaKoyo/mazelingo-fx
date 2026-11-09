@@ -64,6 +64,10 @@ function firstNonEmpty(values: readonly (string | undefined)[]): string {
   return "";
 }
 
+function requireModelChain(models: readonly string[]): void {
+  if (models.length === 0) throw new Error("Model chain is not configured");
+}
+
 export async function clearCache(): Promise<{ ok: true }> {
   await cache.clear();
   return { ok: true };
@@ -126,6 +130,7 @@ export async function normaDone(payload: Readonly<NormaDonePayload>): Promise<{ 
 
 export async function explainSentence(payload: Readonly<ExplainSentencePayload>): Promise<unknown> {
   const config = await loadConfig();
+  requireModelChain(config.models);
   const text = firstNonEmpty([payload.text, payload.englishText]).trim();
   const japaneseText = (payload.japaneseText ?? "").trim();
   if (text === "") {
@@ -147,6 +152,7 @@ export async function explainSentence(payload: Readonly<ExplainSentencePayload>)
 
 export async function feedback(payload: Readonly<FeedbackPayload>): Promise<unknown> {
   const config = await loadConfig();
+  requireModelChain(config.models);
   const rawResult: unknown = await callLLMChain(
     config.models,
     buildFeedbackMessages(payload),
@@ -212,6 +218,7 @@ export async function removeVocab(payload: Readonly<RemoveVocabPayload>): Promis
 
 export async function analyzeVocab(payload: Readonly<AnalyzeVocabPayload>): Promise<unknown> {
   const config = await loadConfig();
+  requireModelChain(config.models);
   return callLLMChain(
     config.models,
     buildVocabAnalysisMessages(payload.word),
@@ -226,6 +233,7 @@ export async function generateQuiz(
 ): Promise<{ prompt?: string; error?: string }> {
   try {
     const config = await loadConfig();
+    requireModelChain(config.models);
     const messages = buildQuizMessages(payload.situation);
     const result = await callLLMChain(
       config.models,

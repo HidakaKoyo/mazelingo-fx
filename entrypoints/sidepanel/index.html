@@ -1817,6 +1817,23 @@
             <div class="section" id="apiKeysSection"></div>
 
             <div class="section">
+              <label class="label" id="translationModeLabel" for="translationMode"
+                >翻訳モード</label
+              >
+              <select id="translationMode" class="select">
+                <option id="translationModeModelChain" value="model-chain">モデルチェーン</option>
+                <option id="translationModePlamo" value="plamo">PLaMo</option>
+              </select>
+              <label class="label" id="plamoModelLabel" for="plamoModel" style="margin-top: 10px"
+                >PLaMoのモデルID</label
+              >
+              <input id="plamoModel" class="input" type="text" value="default_model" />
+              <div class="hint" id="plamoModeHint">
+                PLaMoはローカル接続先の/completionsへ翻訳要求を送ります。訳文のリンクや強調は残りません。
+              </div>
+            </div>
+
+            <div class="section">
               <label class="label" id="localBaseUrlLabel" for="localBaseUrl"
                 >ローカル接続先のベースURL</label
               >

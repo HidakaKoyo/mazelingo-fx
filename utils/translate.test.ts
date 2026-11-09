@@ -11,7 +11,7 @@ import {
 import { mergeConfig, type Config } from "./config";
 import type { LocalEndpointConfig } from "./local-endpoint";
 import type { TranslationBlock } from "./messages";
-import { modelChainCacheContext } from "./translation-cache-key";
+import { modelChainCacheContext, plamoCacheContext } from "./translation-cache-key";
 
 interface FakeCacheBackend extends CacheBackend {
   state: Record<string, unknown>;
@@ -174,6 +174,44 @@ describe("translateBatch (caching)", () => {
     const result = await translateBatch({ from: "en", htmlBlocks: ["<p>Hi</p>"], to: "ja" }, deps);
     expect(llm).not.toHaveBeenCalled();
     expect(result.blocks[0]).toEqual(cached);
+  });
+});
+
+describe("translateBatch (PLaMo caching)", () => {
+  it("runs PLaMo through the batch cache without using the model chain", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ choices: [{ text: "こんにちは" }] }), { status: 200 }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const { deps, llm, cache, config } = await setup({
+        config: {
+          localEndpoint: { baseUrl: "http://localhost:8765/v1" },
+          models: [],
+          translationMode: "plamo",
+        },
+      });
+      const payload = { from: "en" as const, htmlBlocks: ["Hello."], to: "ja" as const };
+      const first = await translateBatch(payload, deps);
+      const second = await translateBatch(payload, deps);
+      expect(first.blocks[0]).toEqual({
+        sentences: [{ source: "Hello.", translation: "こんにちは" }],
+      });
+      expect(second).toEqual(first);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(llm).not.toHaveBeenCalled();
+      const hit = await cache.lookup(
+        "Hello.",
+        "en",
+        "ja",
+        plamoCacheContext(config.plamoModel, config.localEndpoint.baseUrl),
+      );
+      expect(hit?.block).toEqual(first.blocks[0]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
 

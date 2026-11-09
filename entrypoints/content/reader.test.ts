@@ -38,6 +38,7 @@ function resetReaderTestState(): void {
   document.body.replaceChildren();
   STATE.config.enabled = true;
   STATE.config.models = ["openrouter/deepseek/deepseek-chat"];
+  STATE.config.translationMode = "model-chain";
   STATE.config.minTextLength = 1;
   STATE.config.pageListInclude = "*";
   STATE.config.pageListExclude = "";
@@ -93,6 +94,17 @@ it("sends document blocks one at a time in order", async () => {
     payload: { htmlBlocks: ["Second sentence"] },
   });
   secondResponse.resolve(translation("Second sentence"));
+});
+
+it("starts PLaMo reader mode with an empty model chain", () => {
+  STATE.config.translationMode = "plamo";
+  STATE.config.models = [];
+  const block = document.createElement("p");
+  block.textContent = "Reader sentence";
+  document.body.append(block);
+  browserMocks.sendMessage.mockReturnValue(new Promise(() => {}));
+  startReaderMode();
+  expect(browserMocks.sendMessage).toHaveBeenCalledTimes(1);
 });
 
 it("does not apply an in-flight response after cancellation", async () => {

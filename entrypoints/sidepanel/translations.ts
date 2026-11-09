@@ -1,3 +1,5 @@
+import { translationModeTranslations } from "./translation-mode-translations";
+
 export type Language = "ja" | "en";
 export const translations = {
   en: {
@@ -48,8 +50,7 @@ export const translations = {
     japanese: "Japanese",
     localApiKey: "API key (optional)",
     localBaseUrl: "Local endpoint base URL",
-    localEndpointHint:
-      "For an OpenAI-compatible server. Enter local/<model ID> under Custom… in the model chain. Requests use /chat/completions.",
+    ...translationModeTranslations.en,
     minTextLength: "Min text length",
     minTextLengthHint: "Text shorter than this will not be translated",
     mixLanguage: "Mix languages",
@@ -188,8 +189,7 @@ export const translations = {
     japanese: "日本語",
     localApiKey: "APIキー（任意）",
     localBaseUrl: "ローカル接続先のベースURL",
-    localEndpointHint:
-      "OpenAI互換サーバー用です。モデルチェーンの「カスタム…」へlocal/<モデルID>を入力します。要求は/chat/completionsへ送ります",
+    ...translationModeTranslations.ja,
     minTextLength: "最小文字数",
     minTextLengthHint: "この文字数未満のテキストは翻訳しない",
     mixLanguage: "言語をミックス",

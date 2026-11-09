@@ -7,6 +7,10 @@ export function modelChainCacheContext(models: readonly string[]): TranslationCa
   return { mode: "model-chain", model: models.join("\u0000") };
 }
 
+export function plamoCacheContext(model: string, baseUrl: string): TranslationCacheContext {
+  return { mode: "plamo", model: `${model}\u0000${baseUrl.trim()}` };
+}
+
 export function buildTranslationCacheKey(
   html: string,
   from: string,

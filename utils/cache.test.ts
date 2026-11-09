@@ -3,9 +3,28 @@ import { CACHE_MAX_ENTRIES, CACHE_TTL_MS, createTranslationCache, evictCache } f
 import { CACHE_STORAGE_KEY } from "./keys";
 import type { CacheBackend, TranslationCache } from "./cache";
 import type { TranslationBlock } from "./messages";
-import { buildTranslationCacheKey } from "./translation-cache-key";
+import {
+  buildTranslationCacheKey,
+  modelChainCacheContext,
+  plamoCacheContext,
+} from "./translation-cache-key";
 
 const CACHE_CONTEXT = { mode: "model-chain", model: "gpt-4.1-mini" } as const;
+
+function plamoKey(model: string, baseUrl: string): string {
+  return buildTranslationCacheKey("Hello", "en", "ja", plamoCacheContext(model, baseUrl));
+}
+
+describe("translation cache context", () => {
+  it("separates model-chain and PLaMo modes and PLaMo servers", () => {
+    expect(plamoKey("default_model", "http://localhost:8765/v1")).not.toBe(
+      buildTranslationCacheKey("Hello", "en", "ja", modelChainCacheContext(["default_model"])),
+    );
+    expect(plamoKey("default_model", "http://localhost:8765/v1")).not.toBe(
+      plamoKey("default_model", "http://localhost:8766/v1"),
+    );
+  });
+});
 
 function makeBackend(): CacheBackend & {
   data: Record<string, unknown>;

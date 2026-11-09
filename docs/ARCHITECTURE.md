@@ -30,6 +30,7 @@ WXTは各エントリーポイントを検出し、対象ブラウザ向けのma
 バックグラウンド処理は、`browser.runtime`メッセージの窓口です。
 初回設定、RPC、LLMプロバイダーへの直接通信、OpenAI TTS、翻訳キャッシュ、文法解説、語彙、Norma処理を担当します。
 コンテンツスクリプトへAPIキーを渡さず、外部APIとの通信をバックグラウンド処理へ集約します。
+PLaMo翻訳では、同じ接続先へ同時に送る`/completions`要求を8本までに制限します。
 
 ## コンテンツスクリプト
 
@@ -52,6 +53,8 @@ LLM処理は、モデルの判定、要求の生成、応答の解析、プロ�
 - `utils/llm-providers.ts`：プロバイダー別の要求生成と応答解析
 - `utils/llm.ts`：プロバイダーの解決、通信、代替処理
 - `utils/local-endpoint.ts`：`local/`モデル用の接続先解決、URL組み立て、時間切れ設定
+- `utils/plamo-segment.ts`：HTMLを保った文分割とPLaMoへ渡す文章の抽出
+- `utils/plamo-translation.ts`：PFML3要求、PLaMo応答、時間切れ、接続先別の並列数制限
 - `utils/model-catalog.ts`：保存済みOpenRouterキーによる構造化翻訳対応モデルの取得と正規化
 - `utils/prompts.ts`：翻訳と解説のプロンプト
 - `utils/schemas.ts`：メッセージ内容の実行時検証
@@ -73,6 +76,7 @@ LLM処理は、モデルの判定、要求の生成、応答の解析、プロ�
 
 APIキーは、`mlg_config.apiKeys`へ平文で保存します。
 ローカル接続先のベースURLと任意のAPIキーは、`mlg_config.localEndpoint`へ保存します。
+翻訳モードとPLaMoモデルIDは、`mlg_config.translationMode`と`mlg_config.plamoModel`へ保存します。
 アプリによる暗号化や、独自のバックエンドへの同期は行いません。
 
 ## ブラウザ固有処理の境界

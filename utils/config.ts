@@ -18,6 +18,8 @@ export interface Config {
   models: string[];
   apiKeys: Record<string, string>;
   localEndpoint: LocalEndpointConfig;
+  translationMode: "model-chain" | "plamo";
+  plamoModel: string;
   pageListInclude: string;
   pageListExclude: string;
   mixLanguage: boolean;
@@ -36,6 +38,8 @@ export const DEFAULT_CONFIG: Config = {
   minTextLength: 5,
   mixLanguage: true,
   localEndpoint: { ...DEFAULT_LOCAL_ENDPOINT },
+  translationMode: "model-chain",
+  plamoModel: "default_model",
   models: [],
   outputRatio: 20,
   pageListExclude: "",
@@ -70,6 +74,11 @@ export function mergeConfig(raw: Readonly<MergeInput> | null | undefined): Confi
     apiKeys: { ...DEFAULT_CONFIG.apiKeys, ...safe.apiKeys },
     localEndpoint: mergeLocalEndpoint(safe.localEndpoint),
     models: [...models],
+    plamoModel:
+      typeof safe.plamoModel === "string" && safe.plamoModel.trim() !== ""
+        ? safe.plamoModel
+        : DEFAULT_CONFIG.plamoModel,
+    translationMode: safe.translationMode === "plamo" ? "plamo" : "model-chain",
   };
   if ("providerId" in merged) {
     delete merged.providerId;
