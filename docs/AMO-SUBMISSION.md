@@ -1,6 +1,6 @@
 # Firefox Add-ons 初回登録資料
 
-対象バージョン: 0.5.0。配布先はFirefox Add-onsの公開掲載（listed）。
+対象バージョン: 0.6.0。配布先はFirefox Add-onsの公開掲載（listed）。
 この文書は提出用の原稿であり、提出・審査・公開の完了記録ではありません。
 
 ## 掲載情報
@@ -44,7 +44,7 @@ TypeScriptをWXTでビルドしているため、元ソースのZIPを別途提�
 1. ソースZIPを展開し、Node.js 26とnpmを利用する。
 2. プロジェクトルートで `npm ci` を実行する。
 3. `npm run zip:firefox` を実行する。
-4. `.output/mazelingo-fx-0.5.0-firefox.zip` が提出用パッケージ、`.output/firefox-mv3/` がビルド結果となる。
+4. `.output/mazelingo-fx-0.6.0-firefox.zip` が提出用パッケージ、`.output/firefox-mv3/` がビルド結果となる。
 
 拡張のアイコンからSidebarを開き、「翻訳に使う」でプロバイダーまたはカスタムサーバーを選びます。プロバイダーではAPIキーとモデルチェーンを保存します。カスタムサーバーではサーバーURL、モデルID、任意のAPIキーを保存し、「PLaMo 3 Translate (翻訳専用)」または「汎用モデル」を選びます。対象サイトを開いて翻訳を確認します。音声機能にはOpenAIのAPIキーが別途必要です。審査用のAPIキーはソースに含めていません。
 
