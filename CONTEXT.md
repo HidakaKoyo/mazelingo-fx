@@ -10,6 +10,12 @@ Mazelingo-FX は、Web ページを文単位で翻訳表示する Firefox 拡張
 
 Firefox 固有の実装は browser abstraction、Firefox manifest、Sidebar、AMO 配布、Firefox 検証に閉じ込めます。ブラウザ共通の機能修正は、可能なら upstream へ提案します。
 
+## 次回のUI/UXブラッシュアップ
+
+[ローカルモデルへの接続要件](docs/LOCAL-MODEL-UI-REQUIREMENTS.md)を次回の大規模UI/UX更新で扱います。
+汎用的な入出力と接続設定、接続状態の確認、接続できないときの案内、設定を確認・変更できるプリセットが対象です。
+対象バージョンと具体的な設計は未定です。
+
 ## 作業を始める前に読むもの
 
 1. [CONTRIBUTING.md](CONTRIBUTING.md): 開発・PR・upstream 同期の手順
